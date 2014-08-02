@@ -51,7 +51,7 @@ namespace mlta {
 	{
 		public:
 			/* ====================  LIFECYCLE     ======================================= */
-			SVMPredictor(std::shared_ptr<shark::AbstractSvmTrainer<shark::RealVector, unsigned int>> trainer) :
+			SVMPredictor(std::shared_ptr<shark::AbstractSvmTrainer<shark::RealVector, unsigned int>>& trainer) :
 				m_trainer{trainer}
 			{
 				m_name = m_trainer->name();

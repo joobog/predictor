@@ -17,6 +17,7 @@
  */
 
 #include "SVMPredictor.hpp"
+#include <memory>
 
 
 
@@ -25,34 +26,32 @@ namespace mlta {
 	Prediction SVMPredictor::prediction() {
 		using namespace std;
 		using namespace shark;
-
-//		GaussianRbfKernel<RealVector> kernel(0.5); //unconstrained?
-//		KernelClassifier<RealVector> model;
-//		bool offset        = true;
-//		bool unconstrained = true;
-//		TrainerT trainer(&kernel, 1000.0, offset, unconstrained);
 		
 		const AbstractKernelFunction<RealVector>* kernel = m_trainer->kernel();
-
 		CVFolds<ClassificationDataset> folds = createCVSameSizeBalanced(m_data, m_nFolds);
-
 		Prediction data;
 
 		for (size_t fold = 0; fold < folds.size(); ++fold) {
 			ClassificationDataset training = folds.training(fold);
 			ClassificationDataset validation = folds.validation(fold);
 			KernelClassifier<RealVector> model;
+
+			cout << "trainer name " << endl;
+			cout << m_trainer->name() << endl;
+			cout << "start training" << endl;
 			m_trainer->train(model, training);
 
 			auto elements = validation.elements();
 			for (auto iter = elements.begin(); iter != elements.end(); ++iter) {
-//				cout <<  iter->input << " \t-> " <<  model(iter->input) << " : " <<  iter->label  <<  endl;
+				cout <<  iter->input << " \t-> " <<  model(iter->input) << " : " <<  iter->label  <<  endl;
 
 //				convert boost vector to std vector
 				std::vector<double> stdInput;
-				for(auto x : iter->input) {
-					stdInput.push_back(x);
+
+				for (size_t i = 0; i < iter->input.size(); ++i) {
+					stdInput.push_back(iter->input[i]);
 				}
+
 				std::vector<unsigned int> stdOutput;
 				stdOutput.push_back(iter->label);
 

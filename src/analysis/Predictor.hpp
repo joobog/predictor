@@ -22,6 +22,7 @@ namespace mlta {
 	{
 		public:
 			/* ====================  LIFECYCLE     ======================================= */
+			Predictor() : m_nFolds{5}{};
 
 			/* ====================  ACCESSORS     ======================================= */
 
@@ -40,7 +41,7 @@ namespace mlta {
 
 			shark::ClassificationDataset m_data;
 			std::string m_name;
-			unsigned int m_nFolds = 5;
+			unsigned int m_nFolds;
 		private:
 			/* ====================  METHODS       ======================================= */
 

@@ -70,22 +70,21 @@ namespace mlta {
 				optimizer.step(errorFunction);
 //				cout << "fold: " << fold << " : " << "step: " << step << endl;
 			}	
-
-
 			
 			network.setParameterVector(optimizer.solution().point);
 
 			auto elements  = validation.elements();
 			for (auto iter = elements.begin(); iter != elements.end(); iter++) {
-				cout << iter->input << " \t->" << iter->label << " : " << network(iter->input)[iter->label] << " : " 
-					<< Helpers::arg_max_mod(network(iter->input)) << " : " << network(iter->input)[Helpers::arg_max_mod(network(iter->input))] <<  endl;
+//				cout << iter->input << " \t->" << iter->label << " : " << network(iter->input)[iter->label] << " : " 
+//					<< Helpers::arg_max_mod(network(iter->input)) << " : " << network(iter->input)[Helpers::arg_max_mod(network(iter->input))] <<  endl;
 
 				std::vector<double> stdInput;
-				for(auto x : iter->input) {
-					stdInput.push_back(x);
+				for (size_t i = 0; i < iter->input.size(); ++i) {
+					stdInput.push_back(iter->input[i]);
 				}
+
 				std::vector<unsigned int> stdOutput;
-				stdInput.push_back(iter->label);
+				stdOutput.push_back(iter->label);
 
 				std::vector<unsigned int> stdPred;
 				stdPred.push_back(arg_max(network(iter->input)));

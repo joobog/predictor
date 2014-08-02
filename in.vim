@@ -1,4 +1,4 @@
-let project_dir = '/home/joobog/git/predictor/'
+let project_dir = $GIT . '/predictor/'
 let build_dir = project_dir . 'build/'
 
 exe 'CMakeProjectDir' project_dir

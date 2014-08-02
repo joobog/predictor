@@ -40,6 +40,11 @@ int main ( int argc, char *argv[] )
 	string statFilename;
 	bool separateFiles;
 
+	// nasty but a working solution
+	// kernel must exist until the prediction is done
+	std::shared_ptr<shark::AbstractKernelFunction<shark::RealVector>> kernel;
+	// ***
+
 	try {
 		bpo::options_description desc("Allowed options");
 		desc.add_options()
@@ -58,7 +63,6 @@ int main ( int argc, char *argv[] )
 //			("alg-input-config"  , bpo::value<string>()                         , "algorithm input configuration file");
 
 		bpo::variables_map vm;
-
 		try {
 			bpo::store(bpo::parse_command_line(argc, argv, desc), vm);
 
@@ -67,12 +71,13 @@ int main ( int argc, char *argv[] )
 				cout << desc << endl;
 				return SUCCESS;
 			}
-
 			
 			// create a list of learning algorithms
 			
 			if (vm.count("alg")) {
 				const std::vector<std::string> algoritmList = vm["alg"].as<std::vector<std::string>>();
+				double gamma{vm["svm-gamma"].as<double>()};										// kernel bandwidth parameter
+				kernel = std::make_shared<shark::GaussianRbfKernel<>>(gamma);
 
 				for (auto& algorithm : algoritmList) {
 					if (algorithm == "dtree") { 
@@ -82,48 +87,44 @@ int main ( int argc, char *argv[] )
 						predictorList.push_back(make_shared<ANNPredictor>());
 					}
 					else if (algorithm == "svm") {
-
-						double gamma{vm["svm-gamma"].as<double>()};										// kernel bandwidth parameter
 						double c{vm["svm-regulation"].as<double>()};									// regulation parameter
 						bool offset{vm["svm-offset"].as<bool>()};											// use bias/offset parameter
 						bool unconstrained{vm["svm-unconstrained"].as<bool>()};
 
-						shark::GaussianRbfKernel<> kernel{gamma};
-						shared_ptr<AbstractSvmTrainer<RealVector, unsigned int>> trainer;
-
+						std::shared_ptr<AbstractSvmTrainer<RealVector, unsigned int>> trainer;
 
 						std::vector<std::string> svmTrainerList{vm["svm-trainer"].as<vector<string>>()}; 
 						for (auto& svmTrainer : svmTrainerList) {
 							if (svmTrainer == "ova") {
-								trainer = make_shared<McSvmOVATrainer<RealVector>>(&kernel, c, offset, unconstrained);
+								trainer =	std::make_shared<McSvmOVATrainer<RealVector>>(kernel.get(), c, offset, unconstrained);
 								predictorList.push_back(make_shared<SVMPredictor>(trainer));
 							}
 							else if (svmTrainer == "adm") {
-								trainer = make_shared<McSvmADMTrainer<RealVector>>(&kernel, c, unconstrained);
+								trainer =	std::make_shared<McSvmADMTrainer<RealVector>>(kernel.get(), c, unconstrained);
 								predictorList.push_back(make_shared<SVMPredictor>(trainer));
 							}
 							else if (svmTrainer == "ww") {
-								trainer = make_shared<McSvmWWTrainer<RealVector>>(&kernel, c, offset, unconstrained);
+								trainer =	std::make_shared<McSvmWWTrainer<RealVector>>(kernel.get(), c, offset, unconstrained);
 								predictorList.push_back(make_shared<SVMPredictor>(trainer));
 							}
 							else if (svmTrainer == "ats") {
-								trainer = make_shared<McSvmATSTrainer<RealVector>>(&kernel, c, unconstrained);
+								trainer =	std::make_shared<McSvmATSTrainer<RealVector>>(kernel.get(), c, unconstrained);
 								predictorList.push_back(make_shared<SVMPredictor>(trainer));
 							}
 							else if (svmTrainer == "mmr") {
-								trainer = make_shared<McSvmMMRTrainer<RealVector>>(&kernel, c, offset, unconstrained);
+								trainer =	std::make_shared<McSvmMMRTrainer<RealVector>>(kernel.get(), c, offset, unconstrained);
 								predictorList.push_back(make_shared<SVMPredictor>(trainer));
 							}
 							else if (svmTrainer == "cs") {
-								trainer = make_shared<McSvmCSTrainer<RealVector>>(&kernel, c, offset, unconstrained);
+								trainer = std::make_shared<McSvmCSTrainer<RealVector>>(kernel.get(), c, offset, unconstrained);
 								predictorList.push_back(make_shared<SVMPredictor>(trainer));
 							}
 							else if (svmTrainer == "atm") {
-								trainer = make_shared<McSvmATMTrainer<RealVector>>(&kernel, c, unconstrained);
+								trainer = std::make_shared<McSvmATMTrainer<RealVector>>(kernel.get(), c, unconstrained);
 								predictorList.push_back(make_shared<SVMPredictor>(trainer));
 							}
 							else if (svmTrainer == "llw") {
-								trainer = make_shared<McSvmLLWTrainer<RealVector>>(&kernel, c, unconstrained);
+								trainer = std::make_shared<McSvmLLWTrainer<RealVector>>(kernel.get(), c, unconstrained);
 								predictorList.push_back(make_shared<SVMPredictor>(trainer));
 							}
 						}
@@ -200,13 +201,18 @@ int main ( int argc, char *argv[] )
 	// Make predictions and write them to files
 	std::vector<Prediction> predictionList;
 
+	cout << "do: " << predictorList.size() << " predictions" << endl;
 	for (auto& predictor : predictorList) {
 		predictor->read(inputFilename);
+		cout << "do #" << endl;
 		Prediction prediction = predictor->prediction();
+
+//		print(prediction);
 		if (!separateFiles) {
 			predictionList.push_back(prediction);
 		}
 		else {
+			cout << "Use a separate file for each prediction" << endl;
 			bfs::path p{inputFilename.c_str()};
 			outputFilename = p.parent_path().string() + "/" + p.stem().string() + "-" + predictor->name() + "-output.csv";
 			cout << "Outputfile: " << outputFilename << endl;
@@ -221,6 +227,5 @@ int main ( int argc, char *argv[] )
 		exportCSV(predictionList, outputFilename, ';');
 	}
 	
-
 	return 0;
 }				/* ----------  end of function main  ---------- */

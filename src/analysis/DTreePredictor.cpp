@@ -49,21 +49,30 @@ namespace mlta {
 
 		for (size_t fold = 0; fold < folds.size(); ++fold) {
 			ClassificationDataset training = folds.training(fold);
+			training.makeIndependent();
 			ClassificationDataset validation = folds.validation(fold);
+			validation.makeIndependent();
 			trainer.train(model, training);
 			Data<RealVector> prediction = model(validation.inputs());
 
 			auto elements = validation.elements();
 			for (auto iter = elements.begin(); iter != elements.end(); ++iter) {
-				cout <<  iter->input << " -> " <<  arg_max(model(iter->input)) << " : " <<  iter->label <<  " : " <<  endl;
-
 				// convert boost vector to std vector
+				
 				std::vector<double> stdInput;
-				for(auto x : iter->input) {
-					stdInput.push_back(x);
+
+//			// this (elegant) version doesn't work for some reason
+//				for(const double& x : iter->input) {
+//					stdInput.push_back(x);
+//				}
+
+				for (size_t i = 0; i < iter->input.size(); ++i) {
+					stdInput.push_back(iter->input[i]);
 				}
+
 				std::vector<unsigned int> stdOutput;
-				stdInput.push_back(iter->label);
+				double label = iter->label;
+				stdOutput.push_back(label);
 
 				std::vector<unsigned int> stdPred;
 				stdPred.push_back(arg_max(model(iter->input)));

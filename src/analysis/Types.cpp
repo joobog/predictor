@@ -72,7 +72,7 @@ namespace mlta {
 
 		output_file.open(fn, ios_base::out);
 
-		assert(data.size() != 0);
+//		assert(data.size() != 0);
 //		assert(data.inputs.size() != 0);
 //		assert(data.inputs[0].size() != 0);
 //		assert(data.outputs.size() != 0);
@@ -100,5 +100,29 @@ namespace mlta {
 
 		output_file.close();
 	}
+
+	void print(const Prediction& data, char separator) {
+		using namespace std;
+
+		for (size_t i = 0; i < data.inputs.size(); ++i) {
+			stringstream line{};
+//			line.setf(ios_base::dec, ios_base::basefield);
+//			line.setf(ios_base::fixed, ios_base::floatfield);
+//			line.unsetf(ios_base::scientific);
+			line.precision(10);
+			for (size_t j = 0; j < data.inputs[0].size(); ++j) {
+				line  << setw(0) << data.inputs[i][j] << separator;
+			}
+			for (size_t j = 0; j < data.outputs[0].size(); ++j) {
+				line << data.outputs[i][j] << separator;
+			}
+			for (size_t j = 0; j < data.preds[0].size() - 1; ++j) {
+				line << data.preds[i][j] << separator;
+			}
+			line << data.preds[i][data.preds[0].size() - 1];
+			cout << line.str() << endl;
+		}
+	}
+
 
 }		/* -----  end of namespace mlta  ----- */

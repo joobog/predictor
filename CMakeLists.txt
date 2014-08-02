@@ -21,14 +21,6 @@ configure_file (
 set ( ROOT_DIR "${PROJECT_SOURCE_DIR}/../.." )
 
 #find_package ( Boost REQUIRED )	
-#find_package ( PkgConfig )
-
-
-#if ( PKG_CONFIG_FOUND )
-	#pkg_check_modules ( GTKMM gtkmm-3.0 )
-	#pkg_check_modules ( GLIB glib-2.0 )
-	#pkg_check_modules ( GAIROMM cairomm-1.0 )
-#endif ( PKG_CONFIG_FOUND )
 
 set ( ANALYSIS "${PROJECT_SOURCE_DIR}/src/analysis" )
 
@@ -36,7 +28,7 @@ include_directories (
 	${PROEJCT_BINARY_DIR}
 	"${PROJECT_SOURCE_DIR}/src"
 	"${PROJECT_SOURCE_DIR}/src/analysis"
-	"${ROOT_DIR}/lib_src/Shark/include"
+	"${ROOT_DIR}/lib/shark/include"
 	"${ROOT_DIR}/lib/boost/include"
 	)
 

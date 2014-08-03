@@ -2,6 +2,8 @@
 #include <memory>
 #include <stdio.h>
 
+#include <muParser.h>
+
 #include "boost/program_options.hpp"
 #include "boost/filesystem.hpp"
 
@@ -9,6 +11,7 @@
 #include "analysis/ANNPredictor.hpp"
 #include "analysis/SVMPredictor.hpp"
 #include "analysis/Analyser.hpp"
+#include "analysis/Functions.hpp"
 
 /* 
  * ===  FUNCTION  ======================================================================
@@ -39,6 +42,7 @@ int main ( int argc, char *argv[] )
 	string outputFilename;
 	string statFilename;
 	bool separateFiles;
+	std::vector<std::shared_ptr<mu::Parser>> functions;
 
 	// nasty but a working solution
 	// kernel must exist until the prediction is done
@@ -57,6 +61,7 @@ int main ( int argc, char *argv[] )
 			("svm-gamma"         , bpo::value<double>()->default_value(0.5)     , "svm kernel gamma parameter")
 			("csv-output-file"   , bpo::value<string>()                         , "csv output file")
 			("csv-input-file"    , bpo::value<string>()                         , "csv input file")
+			("transform", bpo::value<std::vector<std::string>>()->multitoken(), "list of function (see documentation of fparser)")
 			("separate-files"		, bpo::value<bool>()->default_value(true), 	"save results in separate files");
 //			("statistics"        , bpo::value<string>()                         , "statistics output file")
 //			("alg-output-config" , bpo::value<string>()                         , "algorithm output configuration file")
@@ -136,6 +141,23 @@ int main ( int argc, char *argv[] )
 				}
 			}
 
+			if (vm.count("transform")) {
+				const std::vector<std::string> rawFunctions = vm["transform"].as<std::vector<string>>();
+				for (const std::string rawFunction : rawFunctions) {
+					if (rawFunction == "-") {
+						functions.push_back(nullptr);
+					}
+					else {
+						std::shared_ptr<mu::Parser> function = std::make_shared<mu::Parser>();;
+						double x = 0;
+						function->DefineVar("x",  &x);
+						function->SetExpr(rawFunction);
+						functions.push_back(function);
+					}
+				}
+				
+			}
+
 			// Input and output filenames
 			if (vm.count("csv-input-file")) {
 				inputFilename = vm["csv-input-file"].as<string>();
@@ -213,6 +235,12 @@ int main ( int argc, char *argv[] )
 	catch (...) {
 		std::cerr << "Unable to read data from file " << inputFilename << std::endl;
 		exit(EXIT_FAILURE);
+	}
+
+	for ( size_t i = 0; i < functions.size(); ++i ) {
+		if (functions[i] != nullptr) {
+			transformInput(data, i, functions[i]);
+		}
 	}
 
 	for (auto& predictor : predictorList) {

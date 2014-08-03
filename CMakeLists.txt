@@ -34,12 +34,14 @@ include_directories (
 	"${PROJECT_SOURCE_DIR}/src/analysis"
 	"${ROOT_DIR}/lib/shark/include"
 	"${ROOT_DIR}/lib/boost/include"
+	"${ROOT_DIR}/lib/muparser/include"
 	)
 
 
 link_directories (
 	"${ROOT_DIR}/lib/shark/lib"
 	"${ROOT_DIR}/lib/boost/lib"
+	"${ROOT_DIR}/lib/muparser/lib"
 	)
 
 add_executable ( predictor
@@ -51,10 +53,12 @@ add_executable ( predictor
 	"${ANALYSIS}/Helpers.cpp"
 	"${ANALYSIS}/Analyser.cpp"
 	"${ANALYSIS}/Types.cpp"
+	"${ANALYSIS}/Functions.cpp"
 	)
 
 target_link_libraries ( predictor
 	shark
+	muparser
 	boost_iostreams 
 	boost_serialization
 	boost_program_options

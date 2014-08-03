@@ -5,6 +5,7 @@
 #include <Types.hpp>
 
 #include <string>
+#include <memory>
 
 #include <shark/Data/Csv.h>
 #include <shark/Data/Dataset.h>
@@ -30,7 +31,9 @@ namespace mlta {
 
 			/* ====================  OPERATORS     ======================================= */
 			virtual void data(shark::ClassificationDataset* data) {m_data = data;}
-			virtual Prediction prediction() = 0;
+			virtual Prediction predictionCV() = 0;
+			virtual std::vector<Prediction> predictionInverseCV() = 0;
+			virtual Prediction predictionOnSameData() = 0;
 			virtual std::string name() {return m_name;}
 
 		protected:

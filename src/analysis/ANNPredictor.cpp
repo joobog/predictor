@@ -41,7 +41,7 @@
 #include <boost/archive/polymorphic_text_oarchive.hpp>
 
 namespace mlta {
-	Prediction ANNPredictor::prediction() 
+	Prediction ANNPredictor::predictionCV() 
 	{
 		using namespace std;
 		using namespace shark;

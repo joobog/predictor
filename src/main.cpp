@@ -247,7 +247,7 @@ int main ( int argc, char *argv[] )
 
 	for (auto& predictor : predictorList) {
 		predictor->data(&data);
-		Prediction prediction = predictor->prediction();
+		Prediction prediction = predictor->predictionCV();
 		predictionList.push_back(prediction);
 	}
 	

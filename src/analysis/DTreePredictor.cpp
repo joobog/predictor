@@ -35,7 +35,7 @@
 #include <boost/archive/polymorphic_text_oarchive.hpp>
 namespace mlta {
 
-	Prediction DTreePredictor::prediction()
+	Prediction DTreePredictor::predictionCV()
 	{
 		using namespace shark;
 		using namespace std;

@@ -23,7 +23,7 @@
 
 namespace mlta {
 
-	Prediction SVMPredictor::prediction() {
+	Prediction SVMPredictor::predictionCV() {
 		using namespace std;
 		using namespace shark;
 		

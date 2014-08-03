@@ -61,6 +61,7 @@ int main ( int argc, char *argv[] )
 			("svm-gamma"         , bpo::value<double>()->default_value(0.5)     , "svm kernel gamma parameter")
 			("csv-output-file"   , bpo::value<string>()                         , "csv output file")
 			("csv-input-file"    , bpo::value<string>()                         , "csv input file")
+			("prediction-type", bpo::value<string>()->default_value("cv"), "CrossValidation (cv), InverseCrossValidation(icv), SameData(sd)")
 			("transform", bpo::value<std::vector<std::string>>()->multitoken(), "list of function (see documentation of fparser)");
 //			("statistics"        , bpo::value<string>()                         , "statistics output file")
 //			("alg-output-config" , bpo::value<string>()                         , "algorithm output configuration file")

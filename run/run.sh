@@ -21,36 +21,17 @@ echo "Current directory: `pwd`"
 #../build/predictor --alg=svm  --svm-trainer=ww ats mmr cs atm llw --csv-input-file=/home/joobog/git/trace_analyse/data/dataset3.csv
 #../build/predictor --alg=ann --transform="log(x)" "-" "log(x)" --csv-input-file=${DATAPATH}/irisdb.csv
 
-${SCRIPTPATH}/../build/predictor --alg=svm --svm-trainer=ova --prediction-type=cv --csv-input-file=${DATAPATH}/irisdb.csv
-${SCRIPTPATH}/../build/predictor --alg=svm --svm-trainer=adm --prediction-type=cv --csv-input-file=${DATAPATH}/irisdb.csv
-${SCRIPTPATH}/../build/predictor --alg=svm --svm-trainer=ww --prediction-type=cv --csv-input-file=${DATAPATH}/irisdb.csv
-${SCRIPTPATH}/../build/predictor --alg=svm --svm-trainer=ats --prediction-type=cv --csv-input-file=${DATAPATH}/irisdb.csv
-${SCRIPTPATH}/../build/predictor --alg=svm --svm-trainer=mmr --prediction-type=cv --csv-input-file=${DATAPATH}/irisdb.csv
-${SCRIPTPATH}/../build/predictor --alg=svm --svm-trainer=cs --prediction-type=cv --csv-input-file=${DATAPATH}/irisdb.csv
-${SCRIPTPATH}/../build/predictor --alg=svm --svm-trainer=atm --prediction-type=cv --csv-input-file=${DATAPATH}/irisdb.csv
-${SCRIPTPATH}/../build/predictor --alg=svm --svm-trainer=llw --prediction-type=cv --csv-input-file=${DATAPATH}/irisdb.csv
-${SCRIPTPATH}/../build/predictor --alg=dtree --prediction-type=cv --csv-input-file=${DATAPATH}/irisdb.csv
-${SCRIPTPATH}/../build/predictor --alg=ann --prediction-type=cv --csv-input-file=${DATAPATH}/irisdb.csv
-
-${SCRIPTPATH}/../build/predictor --alg=svm --svm-trainer=ova --prediction-type=icv --csv-input-file=${DATAPATH}/irisdb.csv
-${SCRIPTPATH}/../build/predictor --alg=svm --svm-trainer=adm --prediction-type=icv --csv-input-file=${DATAPATH}/irisdb.csv
-${SCRIPTPATH}/../build/predictor --alg=svm --svm-trainer=ww --prediction-type=icv --csv-input-file=${DATAPATH}/irisdb.csv
-${SCRIPTPATH}/../build/predictor --alg=svm --svm-trainer=ats --prediction-type=icv --csv-input-file=${DATAPATH}/irisdb.csv
-${SCRIPTPATH}/../build/predictor --alg=svm --svm-trainer=mmr --prediction-type=icv --csv-input-file=${DATAPATH}/irisdb.csv
-${SCRIPTPATH}/../build/predictor --alg=svm --svm-trainer=cs --prediction-type=icv --csv-input-file=${DATAPATH}/irisdb.csv
-${SCRIPTPATH}/../build/predictor --alg=svm --svm-trainer=atm --prediction-type=icv --csv-input-file=${DATAPATH}/irisdb.csv
-${SCRIPTPATH}/../build/predictor --alg=svm --svm-trainer=llw --prediction-type=icv --csv-input-file=${DATAPATH}/irisdb.csv
-${SCRIPTPATH}/../build/predictor --alg=dtree --prediction-type=icv --csv-input-file=${DATAPATH}/irisdb.csv
-${SCRIPTPATH}/../build/predictor --alg=ann --prediction-type=icv --csv-input-file=${DATAPATH}/irisdb.csv
+CSVFILE="${DATAPATH}/irisdb.csv"
+TYPES=( "cv" "icv" sd )
+TRAINERS=( "ova" "adm" "ww" "ats" "cs" "atm" "llw" )
 
 
-${SCRIPTPATH}/../build/predictor --alg=svm --svm-trainer=ova --prediction-type=sd --csv-input-file=${DATAPATH}/irisdb.csv
-${SCRIPTPATH}/../build/predictor --alg=svm --svm-trainer=adm --prediction-type=sd --csv-input-file=${DATAPATH}/irisdb.csv
-${SCRIPTPATH}/../build/predictor --alg=svm --svm-trainer=ww --prediction-type=sd --csv-input-file=${DATAPATH}/irisdb.csv
-${SCRIPTPATH}/../build/predictor --alg=svm --svm-trainer=ats --prediction-type=sd --csv-input-file=${DATAPATH}/irisdb.csv
-${SCRIPTPATH}/../build/predictor --alg=svm --svm-trainer=mmr --prediction-type=sd --csv-input-file=${DATAPATH}/irisdb.csv
-${SCRIPTPATH}/../build/predictor --alg=svm --svm-trainer=cs --prediction-type=sd --csv-input-file=${DATAPATH}/irisdb.csv
-${SCRIPTPATH}/../build/predictor --alg=svm --svm-trainer=atm --prediction-type=sd --csv-input-file=${DATAPATH}/irisdb.csv
-${SCRIPTPATH}/../build/predictor --alg=svm --svm-trainer=llw --prediction-type=sd --csv-input-file=${DATAPATH}/irisdb.csv
-${SCRIPTPATH}/../build/predictor --alg=dtree --prediction-type=sd --csv-input-file=${DATAPATH}/irisdb.csv
-${SCRIPTPATH}/../build/predictor --alg=ann --prediction-type=sd --csv-input-file=${DATAPATH}/irisdb.csv
+for TYPE in "${TYPES[@]}" 
+do
+	for TRAINER in "${TRAINERS[@]}"
+	do
+		${SCRIPTPATH}/../build/predictor --alg=svm --svm-trainer=${TRAINER} --prediction-type=${TYPE} --csv-input-file=${CSVFILE}
+	done
+	${SCRIPTPATH}/../build/predictor --alg=dtree --prediction-type=${TYPE} --csv-input-file=${CSVFILE}
+	${SCRIPTPATH}/../build/predictor --alg=ann --prediction-type=${TYPE} --csv-input-file=${CSVFILE}
+done

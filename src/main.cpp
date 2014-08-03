@@ -28,6 +28,12 @@ namespace {
 	const size_t ERROR_INPUTFILE_REQUIRED = 4;
 }
 
+enum class PredictionType {
+	CV,  // CrossValidation
+	ICV, // InverseCrossValidation
+	SD   // SameData
+};
+
 int main ( int argc, char *argv[] )
 {
 	using namespace std;
@@ -43,6 +49,7 @@ int main ( int argc, char *argv[] )
 	string statFilename;
 	bool separateFiles;
 	std::vector<std::shared_ptr<mu::Parser>> functions;
+	PredictionType predictionType;
 
 	// nasty but a working solution
 	// kernel must exist until the prediction is done
@@ -76,9 +83,10 @@ int main ( int argc, char *argv[] )
 				cout << desc << endl;
 				return SUCCESS;
 			}
-			
-			// create a list of learning algorithms
-			
+		
+			/*
+			 * List of learning algorithms
+			 */	
 			if (vm.count("alg")) {
 				const std::vector<std::string> algoritmList = vm["alg"].as<std::vector<std::string>>();
 				double gamma{vm["svm-gamma"].as<double>()};										// kernel bandwidth parameter
@@ -158,7 +166,9 @@ int main ( int argc, char *argv[] )
 				
 			}
 
-			// Input and output filenames
+			/*
+			 * Input and output filenames
+			 */
 			if (vm.count("csv-input-file")) {
 				inputFilename = vm["csv-input-file"].as<string>();
 				bfs::path p{inputFilename.c_str()};
@@ -188,18 +198,59 @@ int main ( int argc, char *argv[] )
 				return ERROR_INPUTFILE_REQUIRED;
 			}
 
+
+			/* 
+			 * Prediction Type
+			 */
+			if (vm.count("prediction-type")) {
+				std::string rawPredictionType = vm["prediction-type"].as<std::string>();
+				if (rawPredictionType == "cv") {
+					predictionType = PredictionType::CV;
+				}
+				else if (rawPredictionType == "icv") {
+					predictionType = PredictionType::ICV;
+				}
+				else if (rawPredictionType == "sd") {
+					predictionType = PredictionType::SD;
+				}
+				else {
+					std::cout << "ERROR: unknown prediciton type: " << rawPredictionType << endl;
+					exit(1);
+				}
+
+			}
+
+			/*
+			 * Filename generator
+			 */
 			if (vm.count("csv-output-file")) {
 				outputFilename = vm["csv-output-file"].as<string>();
-
 			}
 			else {
 				bfs::path p{inputFilename.c_str()};
+				outputFilename = p.parent_path().string() + "/" + p.stem().string() + "-";
 				if (predictorList.size() == 1) {
-					outputFilename = p.parent_path().string() + "/" + p.stem().string() + "-" + predictorList[0]->name() + "-output.csv";
+					outputFilename += predictorList[0]->name();
 				}
 				else {
-					outputFilename = p.parent_path().string() + "/" + p.stem().string() + "-" + "mix" + "-output.csv";
+					outputFilename += "mix";
 				}
+				switch (predictionType) {
+					case PredictionType::CV:
+						outputFilename += "-cv";
+						break;
+					case PredictionType::ICV:
+						outputFilename += "-icv";
+						break;
+					case PredictionType::SD:
+						outputFilename += "-sd";
+						break;
+					default:
+						outputFilename +="-unknown";
+						std::cout << "Warning: Unknown prediction type" << std::endl;
+						break;	
+				}
+				outputFilename += "-output.csv";
 			}
 
 //			if (vm.count("statistics")) {
@@ -246,14 +297,39 @@ int main ( int argc, char *argv[] )
 		}
 	}
 
-	for (auto& predictor : predictorList) {
-		predictor->data(&data);
-		Prediction prediction = predictor->predictionCV();
-		predictionList.push_back(prediction);
+	switch (predictionType) {
+		case PredictionType::CV:
+			for (auto& predictor : predictorList) {
+				predictor->data(&data);
+				Prediction prediction = predictor->predictionCV();
+				predictionList.push_back(prediction);
+			}
+			exportCSV(predictionList, outputFilename, ';');
+			std::cout << "Output is written to " << outputFilename << endl;
+			break;
+		case PredictionType::ICV:
+			for (auto& predictor : predictorList) {
+				predictor->data(&data);
+				std::vector<Prediction> prediction = predictor->predictionInverseCV();
+				exportCSV(prediction, outputFilename, ';');
+				std::cout << "Output is written to " << outputFilename << endl;
+			}
+			std::cout << "inverse crossvalidation not implemented yet" << std::endl;
+			break;
+		case PredictionType::SD:
+			for (auto& predictor : predictorList) {
+				predictor->data(&data);
+				Prediction prediction = predictor->predictionOnSameData();
+				predictionList.push_back(prediction);
+			}
+			exportCSV(predictionList, outputFilename, ';');
+			std::cout << "Output is written to " << outputFilename << endl;
+			std::cout << "prediction on the same data not implemented yet" << std::endl;
+			break;
+		default:
+			break;	
 	}
 	
-	exportCSV(predictionList, outputFilename, ';');
-	std::cout << "Output is written to " << outputFilename << endl;
 
 	return 0;
 }				/* ----------  end of function main  ---------- */

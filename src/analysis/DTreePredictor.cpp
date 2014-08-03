@@ -43,7 +43,7 @@ namespace mlta {
 		CARTTrainer trainer;
 		CARTClassifier<RealVector> model;
 		ZeroOneLoss<unsigned int, RealVector> loss;
-		CVFolds<ClassificationDataset> folds = createCVSameSizeBalanced(m_data, m_nFolds);
+		CVFolds<ClassificationDataset> folds = createCVSameSizeBalanced(*m_data, m_nFolds);
 
 		Prediction data;
 

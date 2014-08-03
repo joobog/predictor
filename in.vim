@@ -4,7 +4,7 @@ let build_dir = project_dir . 'build/'
 exe 'CMakeProjectDir' project_dir
 exe 'CMakeBuildLocation' build_dir
 exe 'MakeFile' build_dir .'Makefile'
-exe 'MakeCmdlineArgs -j4'
+exe 'MakeCmdlineArgs -j12'
 
 
 exe 'DoxygenConfigFile' project_dir .'Doxyfile.config'

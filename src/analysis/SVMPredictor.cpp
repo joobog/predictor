@@ -28,7 +28,7 @@ namespace mlta {
 		using namespace shark;
 		
 		const AbstractKernelFunction<RealVector>* kernel = m_trainer->kernel();
-		CVFolds<ClassificationDataset> folds = createCVSameSizeBalanced(m_data, m_nFolds);
+		CVFolds<ClassificationDataset> folds = createCVSameSizeBalanced(*m_data, m_nFolds);
 		Prediction data;
 
 		for (size_t fold = 0; fold < folds.size(); ++fold) {

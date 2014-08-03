@@ -200,11 +200,23 @@ int main ( int argc, char *argv[] )
 
 	// Make predictions and write them to files
 	std::vector<Prediction> predictionList;
+	shark::ClassificationDataset data;
 
-	cout << "do: " << predictorList.size() << " predictions" << endl;
+	try {
+		shark::importCSV(data, inputFilename, shark::LAST_COLUMN, ';');
+	}
+	catch (shark::Exception e) {
+		std::cout << "Unable to open file " << inputFilename <<  ". Check paths!" << std::endl;
+		std::cout << e.what()               << std::endl;
+		exit(EXIT_FAILURE);
+	}
+	catch (...) {
+		std::cerr << "Unable to read data from file " << inputFilename << std::endl;
+		exit(EXIT_FAILURE);
+	}
+
 	for (auto& predictor : predictorList) {
-		predictor->read(inputFilename);
-		cout << "do #" << endl;
+		predictor->data(&data);
 		Prediction prediction = predictor->prediction();
 
 //		print(prediction);

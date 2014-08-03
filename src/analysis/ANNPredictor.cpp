@@ -46,13 +46,13 @@ namespace mlta {
 		using namespace std;
 		using namespace shark;
 
-		CVFolds<ClassificationDataset> folds = createCVSameSizeBalanced(m_data, m_nFolds);
+		CVFolds<ClassificationDataset> folds = createCVSameSizeBalanced(*m_data, m_nFolds);
 		Prediction data;
 
 		double result = 0;
 		for (size_t fold = 0; fold < folds.size(); ++fold) {
 			FFNet<LogisticNeuron, LogisticNeuron> network;
-			vector<size_t> layers = {inputDimension(m_data), 10, numberOfClasses(m_data)};
+			vector<size_t> layers = {inputDimension(*m_data), 10, numberOfClasses(*m_data)};
 			network.setStructure(layers, FFNetStructures::Full, true);	
 			initRandomUniform(network,-0.1,0.1);
 

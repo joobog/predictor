@@ -13,12 +13,16 @@ set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3" )
 #set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-register" )
 #set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-return-local-addr" )
 
+
+set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++ -static")
+
 configure_file (
 	"${PROJECT_SOURCE_DIR}/ta_config.h.in"
 	"${PROJECT_BINARY_DIR}/ta_config.h"
 	)
 
 set ( ROOT_DIR "${PROJECT_SOURCE_DIR}/../.." )
+set ( CMAKE_INSTALL_PREFIX "${PROJECT_SOURCE_DIR}/../.." )
 
 #find_package ( Boost REQUIRED )	
 
@@ -57,3 +61,7 @@ target_link_libraries ( predictor
 	boost_system
 	boost_filesystem
 	) 
+
+install ( TARGETS predictor DESTINATION bin )
+install ( FILES ${PROJECT_SOURCE_DIR}/data/irisdb.csv DESTINATION data )
+install ( FILES ${PROJECT_SOURCE_DIR}/data/dataset3.csv DESTINATION data )

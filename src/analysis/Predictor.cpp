@@ -22,18 +22,4 @@
 #include "analysis/Predictor.hpp"
 
 namespace mlta {
-	void Predictor::read(const std::string filename) {
-		try {
-			shark::importCSV(m_data, filename, shark::LAST_COLUMN, ';');
-		}
-		catch (shark::Exception e) {
-			std::cout << "Unable to open file " << filename <<  ". Check paths!" << std::endl;
-			std::cout << e.what()               << std::endl;
-			exit(EXIT_FAILURE);
-		}
-		catch (...) {
-			std::cerr << "Unable to read data from file " << filename << std::endl;
-			exit(EXIT_FAILURE);
-		}
-	}
 }		/* -----  end of namespace mlta  ----- */

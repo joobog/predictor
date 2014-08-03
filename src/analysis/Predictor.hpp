@@ -29,8 +29,7 @@ namespace mlta {
 			/* ====================  MUTATORS      ======================================= */
 
 			/* ====================  OPERATORS     ======================================= */
-			virtual void read(const std::string filename);
-
+			virtual void data(shark::ClassificationDataset* data) {m_data = data;}
 			virtual Prediction prediction() = 0;
 			virtual std::string name() {return m_name;}
 
@@ -39,7 +38,7 @@ namespace mlta {
 
 			/* ====================  DATA MEMBERS  ======================================= */
 
-			shark::ClassificationDataset m_data;
+			shark::ClassificationDataset* m_data;
 			std::string m_name;
 			unsigned int m_nFolds;
 		private:

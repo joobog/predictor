@@ -41,10 +41,5 @@ namespace mlta {
 		std::vector<std::vector<unsigned int>> preds;
 		std::vector<std::string> predLabels;
 	};	
-
-	void exportCSV(const Prediction& pred, std::string fn, char separator = ',', char comment = '#');
-	void exportCSV(const std::vector<Prediction>& pred, std::string fn, char separator = ',', char comment = '#');
-	void print(const Prediction& data, char separator = ':');
-
 }		/* -----  end of namespace mlta  ----- */
 #endif   /* ----- #ifndef Types_INC  ----- */

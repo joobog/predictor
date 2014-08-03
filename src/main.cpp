@@ -61,8 +61,7 @@ int main ( int argc, char *argv[] )
 			("svm-gamma"         , bpo::value<double>()->default_value(0.5)     , "svm kernel gamma parameter")
 			("csv-output-file"   , bpo::value<string>()                         , "csv output file")
 			("csv-input-file"    , bpo::value<string>()                         , "csv input file")
-			("transform", bpo::value<std::vector<std::string>>()->multitoken(), "list of function (see documentation of fparser)")
-			("separate-files"		, bpo::value<bool>()->default_value(true), 	"save results in separate files");
+			("transform", bpo::value<std::vector<std::string>>()->multitoken(), "list of function (see documentation of fparser)");
 //			("statistics"        , bpo::value<string>()                         , "statistics output file")
 //			("alg-output-config" , bpo::value<string>()                         , "algorithm output configuration file")
 //			("alg-input-config"  , bpo::value<string>()                         , "algorithm input configuration file");
@@ -194,7 +193,12 @@ int main ( int argc, char *argv[] )
 			}
 			else {
 				bfs::path p{inputFilename.c_str()};
-				outputFilename = p.parent_path().string() + "/" + p.stem().string() + "-" + "mix" + "-output.csv";
+				if (predictorList.size() == 1) {
+					outputFilename = p.parent_path().string() + "/" + p.stem().string() + "-" + predictorList[0]->name() + "-output.csv";
+				}
+				else {
+					outputFilename = p.parent_path().string() + "/" + p.stem().string() + "-" + "mix" + "-output.csv";
+				}
 			}
 
 //			if (vm.count("statistics")) {
@@ -202,8 +206,6 @@ int main ( int argc, char *argv[] )
 //				cout << "Statitstics: " << statFilename << endl;
 //			}
 			
-
-			separateFiles = vm["separate-files"].as<bool>();
 
 			bpo::notify(vm);
 		}
@@ -246,26 +248,11 @@ int main ( int argc, char *argv[] )
 	for (auto& predictor : predictorList) {
 		predictor->data(&data);
 		Prediction prediction = predictor->prediction();
-
-//		print(prediction);
-		if (!separateFiles) {
-			predictionList.push_back(prediction);
-		}
-		else {
-			cout << "Use a separate file for each prediction" << endl;
-			bfs::path p{inputFilename.c_str()};
-			outputFilename = p.parent_path().string() + "/" + p.stem().string() + "-" + predictor->name() + "-output.csv";
-			cout << "Outputfile: " << outputFilename << endl;
-			exportCSV(prediction, outputFilename, ';');
-
-//			Analyser analyser(prediction);
-		}
-	}
-
-	if (!separateFiles) {
-		cout << "Mixed outputfile: " << outputFilename << endl;
-		exportCSV(predictionList, outputFilename, ';');
+		predictionList.push_back(prediction);
 	}
 	
+	exportCSV(predictionList, outputFilename, ';');
+	std::cout << "Output is written to " << outputFilename << endl;
+
 	return 0;
 }				/* ----------  end of function main  ---------- */

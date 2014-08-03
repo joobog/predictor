@@ -1,0 +1,48 @@
+1. Prinzip
+
+Wir wollen zwei Performance Voraussagen (perf1 und perf2) in Abhängigkeit vom Füllstand (Fill), Buffer (Buf) und Datasieving (DS) machen: 
+
+perf1 = Perf(Fill, Buf, DS=on)
+perf2 = Perf(Fill, Buf, DS=off)
+
+Die Ergebnisse sollen in einer Datenbank gespeichert, auf die man sehr schnell zugreifen kann.
+
+Bevor die Anwendung die Daten liest, fragt sie Parameter in der Datenbank ab, mit den die Operation voraussichtlich am effektivsten ausgeführt werden kann. Die Operation wird dann mit diesen Einstellungen ausgeführt. Zu Anfang wollen wir nur Datasieving als einziger Parameter gewählen, später können weitere Parameter hinzukommen.
+
+
+
+2. Qualität der Voraussagen
+
+-- Interessante Größen
+Mittlerer Fehler, größter Fehler
+
+-- CrossValidation
+Einfach mal zu sehen wie gut Machinen Learning fuer das Problem funktioniert.
+
+-- Validation
+Als Lerndaten werden alle Daten benutzt. Dann sollen wieder alle Daten fuer Voraussage benutzt werden.
+
+-- Robustheit
+Wie gut funktioniert das Verfahren, wenn wir (1) bestimmte Gruppen von Messungen ausblenden, (2) auf den restlichen Daten lernen und (3) die ausgeblendeten Gruppen wieder voraussagen? Das Verfahren soll erstmal auf Buffer angewendet werden.
+
+
+
+3. Daten
+
+Auf Spalten sollen diverse Funktionen angewendet werden und Machine Learning angewendet werden. Danach soll geschaut werden, ob die Qualität (siehe: Qualität der Voraussagen) steigt oder sinkt. Es handelt sich erstmal und ein Blindversuch. 
+
+Es könnte sein, dass bestimmte Verfahren unempfindlich auf die Datenmanipulation reagieren, andere widerum könnten bestimmte Effekte aufweisen.
+
+
+
+4. Schnittstelle
+
+Manche Lernalgorithmen können das Modell zur Laufzeit nicht optimieren. Soweit ich weiss ist das nicht mit Desision-Trees möglich. Mit Support Vector Machine ist es vielleicht möglich (müsste ich noch recherchieren.) Die neuronalen Netze sind ideal dafür geeignet.
+
+learn(F, B, D, p)
+prediction(F, B, D) -> p
+
+p : int Voraussage
+F : int Füllstand
+B : int Buffer
+D : bool Datasieving 

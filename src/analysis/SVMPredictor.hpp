@@ -64,15 +64,8 @@ namespace mlta {
 			/* ====================  OPERATORS     ======================================= */
 
 			Prediction predictionCV() override;
-			std::vector<Prediction> predictionInverseCV() override {
-				std::vector<Prediction> pList{};
-				return std::move(pList);
-			}
-			Prediction predictionOnSameData() override {
-				Prediction p{};
-				return std::move(p);
-			}
-
+			std::vector<Prediction> predictionInverseCV() override;
+			Prediction predictionOnSameData() override;
 		protected:
 			/* ====================  METHODS       ======================================= */
 

@@ -1,3 +1,4 @@
+Data.in.Byte;Gap.in.Byte;Datasieving.1.on;Buffer.in.MByte;Performance.in.MByte/s;Prediction.in.MByte/s
 #Data;Gap;Datasieving;Buffer;Performance
 #Byte;Byte;on/off;MByte;MByte/s
 2048;0;1;1;88.396244

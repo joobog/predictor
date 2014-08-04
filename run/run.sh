@@ -22,7 +22,8 @@ echo "Current directory: `pwd`"
 #../build/predictor --alg=ann --transform="log(x)" "-" "log(x)" --csv-input-file=${DATAPATH}/irisdb.csv
 
 CSVFILE="${DATAPATH}/irisdb.csv"
-TYPES=( "cv" "icv" sd )
+#CSVFILE="${DATAPATH}/dataset3.csv"
+TYPES=( "cv" "icv" "sd" )
 TRAINERS=( "ova" "adm" "ww" "ats" "cs" "atm" "llw" )
 
 
@@ -30,8 +31,8 @@ for TYPE in "${TYPES[@]}"
 do
 	for TRAINER in "${TRAINERS[@]}"
 	do
-		${SCRIPTPATH}/../build/predictor --alg=svm --svm-trainer=${TRAINER} --prediction-type=${TYPE} --csv-input-file=${CSVFILE}
+		${SCRIPTPATH}/../build/predictor --alg=svm --svm-trainer=${TRAINER} --prediction-type=${TYPE} --csv-input-file=${CSVFILE}&
 	done
-	${SCRIPTPATH}/../build/predictor --alg=dtree --prediction-type=${TYPE} --csv-input-file=${CSVFILE}
-	${SCRIPTPATH}/../build/predictor --alg=ann --prediction-type=${TYPE} --csv-input-file=${CSVFILE}
+	${SCRIPTPATH}/../build/predictor --alg=dtree --prediction-type=${TYPE} --csv-input-file=${CSVFILE}&
+	${SCRIPTPATH}/../build/predictor --alg=ann --prediction-type=${TYPE} --csv-input-file=${CSVFILE}&
 done

@@ -76,9 +76,10 @@ namespace mlta {
 				line << data[0].outputs[i][j] << separator;
 			}
 			for (size_t k = 0; k < data.size(); ++k) {
-				for (size_t j = 0; j < data[k].preds[0].size(); ++j) {
+				for (size_t j = 0; j < data[k].preds[0].size()-1; ++j) {
 					line << data[k].preds[i][j] << separator;
 				}
+				line << data[k].preds[i][data[k].preds[0].size()-1];
 			}
 			output_file << line.str() << endl;
 		}

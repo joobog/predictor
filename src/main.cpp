@@ -34,6 +34,55 @@ enum class PredictionType {
 	SD   // SameData
 };
 
+std::string filenameGenerator(
+		const std::string& inputFilename, 
+		const std::vector<std::shared_ptr<mlta::Predictor>>& predictorList,
+		const std::vector<std::string>& functions,
+		PredictionType pType
+		) 
+{
+	namespace bfs = boost::filesystem;
+
+	std::string filename{};
+	bfs::path p{inputFilename.c_str()};
+	filename = p.parent_path().string() + "/" + p.stem().string();
+
+	for (const auto& predictor : predictorList) {
+		filename += "-" + predictor->name();
+	}	
+
+	switch (pType) {
+		case PredictionType::CV:
+			filename += "-cv";
+			break;
+		case PredictionType::ICV:
+			filename += "-icv";
+			break;
+		case PredictionType::SD:
+			filename += "-sd";
+			break;
+		default:
+			filename +="-unknown";
+			std::cout << "Warning: Unknown prediction type" << std::endl;
+			break;	
+	}
+
+	if (!functions.empty()) {
+		filename += "-functions";
+	}
+
+	filename += "-output.csv";
+	return filename;
+}
+
+std::string appendFoldNum(std::string& filename, unsigned int foldNum) {
+	namespace bfs = boost::filesystem;
+	std::string newFilename{};
+	bfs::path p{filename.c_str()};
+	newFilename = p.parent_path().string() + "/" + p.stem().string() +  "-" + std::to_string(foldNum) + ".csv";
+	return std::move(newFilename);
+}
+
 int main ( int argc, char *argv[] )
 {
 	using namespace std;
@@ -48,6 +97,7 @@ int main ( int argc, char *argv[] )
 	string outputFilename;
 	string statFilename;
 	bool separateFiles;
+	std::vector<std::string> rawFunctions;
 	std::vector<std::shared_ptr<mu::Parser>> functions;
 	PredictionType predictionType;
 
@@ -150,7 +200,7 @@ int main ( int argc, char *argv[] )
 			}
 
 			if (vm.count("transform")) {
-				const std::vector<std::string> rawFunctions = vm["transform"].as<std::vector<string>>();
+				rawFunctions = vm["transform"].as<std::vector<string>>();
 				for (const std::string rawFunction : rawFunctions) {
 					if (rawFunction == "-") {
 						functions.push_back(nullptr);
@@ -226,32 +276,6 @@ int main ( int argc, char *argv[] )
 			if (vm.count("csv-output-file")) {
 				outputFilename = vm["csv-output-file"].as<string>();
 			}
-			else {
-				bfs::path p{inputFilename.c_str()};
-				outputFilename = p.parent_path().string() + "/" + p.stem().string() + "-";
-				if (predictorList.size() == 1) {
-					outputFilename += predictorList[0]->name();
-				}
-				else {
-					outputFilename += "mix";
-				}
-				switch (predictionType) {
-					case PredictionType::CV:
-						outputFilename += "-cv";
-						break;
-					case PredictionType::ICV:
-						outputFilename += "-icv";
-						break;
-					case PredictionType::SD:
-						outputFilename += "-sd";
-						break;
-					default:
-						outputFilename +="-unknown";
-						std::cout << "Warning: Unknown prediction type" << std::endl;
-						break;	
-				}
-				outputFilename += "-output.csv";
-			}
 
 //			if (vm.count("statistics")) {
 //				statFilename = vm["statistics"].as<string>();
@@ -304,17 +328,26 @@ int main ( int argc, char *argv[] )
 				Prediction prediction = predictor->predictionCV();
 				predictionList.push_back(prediction);
 			}
+			if (outputFilename.empty()) {
+				outputFilename = filenameGenerator(inputFilename, predictorList, rawFunctions, PredictionType::CV);
+			}
 			exportCSV(predictionList, outputFilename, ';');
 			std::cout << "Output is written to " << outputFilename << endl;
 			break;
 		case PredictionType::ICV:
 			for (auto& predictor : predictorList) {
 				predictor->data(&data);
-				std::vector<Prediction> prediction = predictor->predictionInverseCV();
-				exportCSV(prediction, outputFilename, ';');
-				std::cout << "Output is written to " << outputFilename << endl;
+				std::vector<Prediction> predictions = predictor->predictionInverseCV();
+				if (outputFilename.empty()) {
+				outputFilename = filenameGenerator(inputFilename, predictorList, rawFunctions, PredictionType::ICV);
+				}
+				for (size_t i = 0; i < predictions.size(); ++i) {
+					std::vector<Prediction> predictionList{};
+					predictionList.push_back(predictions[i]);
+					exportCSV(predictionList, appendFoldNum(outputFilename, i), ';');
+					std::cout << "Output is written to " << outputFilename << endl;
+				}
 			}
-			std::cout << "inverse crossvalidation not implemented yet" << std::endl;
 			break;
 		case PredictionType::SD:
 			for (auto& predictor : predictorList) {
@@ -322,9 +355,11 @@ int main ( int argc, char *argv[] )
 				Prediction prediction = predictor->predictionOnSameData();
 				predictionList.push_back(prediction);
 			}
+			if (outputFilename.empty()) {
+				outputFilename = filenameGenerator(inputFilename, predictorList, rawFunctions, PredictionType::SD);
+			}
 			exportCSV(predictionList, outputFilename, ';');
 			std::cout << "Output is written to " << outputFilename << endl;
-			std::cout << "prediction on the same data not implemented yet" << std::endl;
 			break;
 		default:
 			break;	

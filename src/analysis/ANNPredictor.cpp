@@ -68,15 +68,63 @@ namespace mlta {
 			
 			for (unsigned int step = 0; step != 20; ++step) {
 				optimizer.step(errorFunction);
-//				cout << "fold: " << fold << " : " << "step: " << step << endl;
 			}	
 			
 			network.setParameterVector(optimizer.solution().point);
 
 			auto elements  = validation.elements();
 			for (auto iter = elements.begin(); iter != elements.end(); iter++) {
-//				cout << iter->input << " \t->" << iter->label << " : " << network(iter->input)[iter->label] << " : " 
-//					<< Helpers::arg_max_mod(network(iter->input)) << " : " << network(iter->input)[Helpers::arg_max_mod(network(iter->input))] <<  endl;
+				std::vector<double> stdInput;
+				for (size_t i = 0; i < iter->input.size(); ++i) {
+					stdInput.push_back(iter->input[i]);
+				}
+
+				std::vector<unsigned int> stdOutput;
+				stdOutput.push_back(iter->label);
+
+				std::vector<unsigned int> stdPred;
+				stdPred.push_back(shark::blas::arg_max(network(iter->input)));
+
+				data.inputs.push_back(stdInput);
+				data.outputs.push_back(stdOutput);
+				data.preds.push_back(stdPred);
+			}
+		}
+	return std::move(data);
+	}
+	std::vector<Prediction> ANNPredictor::predictionInverseCV() {
+		using namespace std;
+		using namespace shark;
+
+		CVFolds<ClassificationDataset> folds = createCVSameSizeBalanced(*m_data, m_nFolds);
+		std::vector<Prediction> dataVector;
+
+		double result = 0;
+		for (size_t fold = 0; fold < folds.size(); ++fold) {
+			Prediction data;
+			FFNet<LogisticNeuron, LogisticNeuron> network;
+			vector<size_t> layers = {inputDimension(*m_data), 10, numberOfClasses(*m_data)};
+			network.setStructure(layers, FFNetStructures::Full, true);	
+			initRandomUniform(network,-0.1,0.1);
+
+			LabeledData<RealVector, unsigned int> training = folds.validation(fold);
+			LabeledData<RealVector, unsigned int> validation = folds.training(fold);
+
+			CrossEntropy loss;
+			//			NegativeClassificationLogLikelihood loss;
+
+			ErrorFunction<RealVector, unsigned int> errorFunction(training, &network, &loss);
+			IRpropPlus optimizer;
+			optimizer.init(errorFunction);
+
+			for (unsigned int step = 0; step != 20; ++step) {
+				optimizer.step(errorFunction);
+			}	
+
+			network.setParameterVector(optimizer.solution().point);
+
+			auto elements  = validation.elements();
+			for (auto iter = elements.begin(); iter != elements.end(); iter++) {
 
 				std::vector<double> stdInput;
 				for (size_t i = 0; i < iter->input.size(); ++i) {
@@ -87,7 +135,57 @@ namespace mlta {
 				stdOutput.push_back(iter->label);
 
 				std::vector<unsigned int> stdPred;
-				stdPred.push_back(arg_max(network(iter->input)));
+				stdPred.push_back(shark::blas::arg_max(network(iter->input)));
+
+				data.inputs.push_back(stdInput);
+				data.outputs.push_back(stdOutput);
+				data.preds.push_back(stdPred);
+			}
+			dataVector.push_back(data);
+		}
+		return std::move(dataVector);
+	}
+
+	Prediction ANNPredictor::predictionOnSameData() {
+		using namespace std;
+		using namespace shark;
+
+		CVFolds<ClassificationDataset> folds = createCVSameSizeBalanced(*m_data, m_nFolds);
+		Prediction data;
+
+		double result = 0;
+		for (size_t fold = 0; fold < folds.size(); ++fold) {
+			FFNet<LogisticNeuron, LogisticNeuron> network;
+			vector<size_t> layers = {inputDimension(*m_data), 10, numberOfClasses(*m_data)};
+			network.setStructure(layers, FFNetStructures::Full, true);	
+			initRandomUniform(network,-0.1,0.1);
+
+
+			CrossEntropy loss;
+//			NegativeClassificationLogLikelihood loss;
+
+			ErrorFunction<RealVector, unsigned int> errorFunction(*m_data, &network, &loss);
+			IRpropPlus optimizer;
+			optimizer.init(errorFunction);
+			
+			for (unsigned int step = 0; step != 20; ++step) {
+				optimizer.step(errorFunction);
+			}	
+			
+			network.setParameterVector(optimizer.solution().point);
+
+			auto elements  = m_data->elements();
+			for (auto iter = elements.begin(); iter != elements.end(); iter++) {
+				std::vector<double> stdInput;
+				for (size_t i = 0; i < iter->input.size(); ++i) {
+					stdInput.push_back(iter->input[i]);
+				}
+
+				std::vector<unsigned int> stdOutput;
+				stdOutput.push_back(iter->label);
+
+				std::vector<unsigned int> stdPred;
+				stdPred.push_back(shark::blas::arg_max(network(iter->input)));
 
 				data.inputs.push_back(stdInput);
 				data.outputs.push_back(stdOutput);

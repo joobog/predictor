@@ -53,19 +53,10 @@ namespace mlta {
 			ClassificationDataset validation = folds.validation(fold);
 			validation.makeIndependent();
 			trainer.train(model, training);
-			Data<RealVector> prediction = model(validation.inputs());
 
 			auto elements = validation.elements();
 			for (auto iter = elements.begin(); iter != elements.end(); ++iter) {
-				// convert boost vector to std vector
-				
 				std::vector<double> stdInput;
-
-//			// this (elegant) version doesn't work for some reason
-//				for(const double& x : iter->input) {
-//					stdInput.push_back(x);
-//				}
-
 				for (size_t i = 0; i < iter->input.size(); ++i) {
 					stdInput.push_back(iter->input[i]);
 				}
@@ -75,12 +66,85 @@ namespace mlta {
 				stdOutput.push_back(label);
 
 				std::vector<unsigned int> stdPred;
-				stdPred.push_back(arg_max(model(iter->input)));
+				stdPred.push_back(shark::blas::arg_max(model(iter->input)));
 
 				data.inputs.push_back(stdInput);
 				data.outputs.push_back(stdOutput);
 				data.preds.push_back(stdPred);
 			}
+		}
+		return std::move(data);
+	}
+
+
+	std::vector<Prediction> DTreePredictor::predictionInverseCV() {
+		using namespace shark;
+		using namespace std;
+
+		CARTTrainer trainer;
+		CARTClassifier<RealVector> model;
+		ZeroOneLoss<unsigned int, RealVector> loss;
+		CVFolds<ClassificationDataset> folds = createCVSameSizeBalanced(*m_data, m_nFolds);
+
+		std::vector<Prediction> dataVector;
+
+		for (size_t fold = 0; fold < folds.size(); ++fold) {
+			Prediction data;
+			ClassificationDataset training = folds.validation(fold);
+			ClassificationDataset validation = folds.training(fold);
+			trainer.train(model, training);
+
+			auto elements = validation.elements();
+			for (auto iter = elements.begin(); iter != elements.end(); ++iter) {
+				std::vector<double> stdInput;
+				for (size_t i = 0; i < iter->input.size(); ++i) {
+					stdInput.push_back(iter->input[i]);
+				}
+
+				std::vector<unsigned int> stdOutput;
+				double label = iter->label;
+				stdOutput.push_back(label);
+
+				std::vector<unsigned int> stdPred;
+				stdPred.push_back(shark::blas::arg_max(model(iter->input)));
+
+				data.inputs.push_back(stdInput);
+				data.outputs.push_back(stdOutput);
+				data.preds.push_back(stdPred);
+			}
+			dataVector.push_back(data);
+		}
+		return std::move(dataVector);
+	}
+
+	Prediction DTreePredictor::predictionOnSameData() {
+		using namespace shark;
+		using namespace std;
+
+		CARTTrainer trainer;
+		CARTClassifier<RealVector> model;
+		ZeroOneLoss<unsigned int, RealVector> loss;
+
+		Prediction data;
+		trainer.train(model, *m_data);
+
+		auto elements = m_data->elements();
+		for (auto iter = elements.begin(); iter != elements.end(); ++iter) {
+			std::vector<double> stdInput;
+			for (size_t i = 0; i < iter->input.size(); ++i) {
+				stdInput.push_back(iter->input[i]);
+			}
+
+			std::vector<unsigned int> stdOutput;
+			double label = iter->label;
+			stdOutput.push_back(label);
+
+			std::vector<unsigned int> stdPred;
+			stdPred.push_back(shark::blas::arg_max(model(iter->input)));
+
+			data.inputs.push_back(stdInput);
+			data.outputs.push_back(stdOutput);
+			data.preds.push_back(stdPred);
 		}
 		return std::move(data);
 	}

@@ -2,7 +2,8 @@
 #ifndef  Predictor_INC
 #define  Predictor_INC
 
-#include <Types.hpp>
+#include "Types.hpp"
+#include "CondFolds.hpp"
 
 #include <string>
 #include <memory>
@@ -34,6 +35,7 @@ namespace mlta {
 			virtual Prediction predictionCV() = 0;
 			virtual std::vector<Prediction> predictionInverseCV() = 0;
 			virtual Prediction predictionOnSameData() = 0;
+			virtual Prediction predictionOfNewInput(std::vector<std::function<bool(double)>> predicates) = 0;
 			virtual std::string name() {return m_name;}
 
 		protected:

@@ -54,6 +54,7 @@ add_executable ( predictor
 	"${ANALYSIS}/Analyser.cpp"
 	"${ANALYSIS}/Types.cpp"
 	"${ANALYSIS}/Functions.cpp"
+	"${ANALYSIS}/CondFolds.cpp"
 	)
 
 target_link_libraries ( predictor

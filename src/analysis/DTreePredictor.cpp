@@ -149,6 +149,44 @@ namespace mlta {
 		return std::move(data);
 	}
 
+
+	Prediction DTreePredictor::predictionOfNewInput(std::vector<std::function<bool(double)>> predicates) {
+		using namespace shark;
+		using namespace std;
+
+		CARTTrainer trainer;
+		CARTClassifier<RealVector> model;
+		ZeroOneLoss<unsigned int, RealVector> loss;
+
+		CondFolds condFolds(*m_data, predicates);
+		ClassificationDataset training = condFolds.training();
+		ClassificationDataset validation = condFolds.validation();
+
+		Prediction data;
+		trainer.train(model, training);
+
+		auto elements = validation.elements();
+		for (auto iter = elements.begin(); iter != elements.end(); ++iter) {
+			std::vector<double> stdInput;
+			for (size_t i = 0; i < iter->input.size(); ++i) {
+				stdInput.push_back(iter->input[i]);
+			}
+
+			std::vector<unsigned int> stdOutput;
+			double label = iter->label;
+			stdOutput.push_back(label);
+
+			std::vector<unsigned int> stdPred;
+			stdPred.push_back(shark::blas::arg_max(model(iter->input)));
+
+			data.inputs.push_back(stdInput);
+			data.outputs.push_back(stdOutput);
+			data.preds.push_back(stdPred);
+		}
+		return std::move(data);
+		return Prediction{};
+	}
+
 //	Prediction DTreePredictor::prediction2()
 //	{
 //		using namespace shark;
@@ -163,7 +201,7 @@ namespace mlta {
 //		PointSearch optimizer;
 //		cout << "\tinit" << endl;
 //		optimizer.init(errorFunction);
-		Prediction pred;
+//		Prediction pred;
 //
 //		for (size_t fold = 0; fold < folds.size(); ++fold) {
 //			ClassificationDataset training = folds.training(fold);

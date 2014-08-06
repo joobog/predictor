@@ -46,6 +46,8 @@ namespace mlta {
 			Prediction predictionCV() override;
 			std::vector<Prediction> predictionInverseCV() override;
 			Prediction predictionOnSameData() override;
+			Prediction predictionOfNewInput(std::vector<std::function<bool(double)>> predicates) override;
+
 		protected:
 			/* ====================  METHODS       ======================================= */
 

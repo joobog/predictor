@@ -105,13 +105,47 @@ namespace mlta {
 		Prediction data;
 		std::vector<Prediction> dataVector;	
 		const AbstractKernelFunction<RealVector>* kernel = m_trainer->kernel();
-		CVFolds<ClassificationDataset> folds = createCVSameSizeBalanced(*m_data, m_nFolds);
 
 		KernelClassifier<RealVector> model;
-
 		m_trainer->train(model, *m_data);
 
 		auto elements = m_data->elements();
+		for (auto iter = elements.begin(); iter != elements.end(); ++iter) {
+			std::vector<double> stdInput;
+			for (size_t i = 0; i < iter->input.size(); ++i) {
+				stdInput.push_back(iter->input[i]);
+			}
+
+			std::vector<unsigned int> stdOutput;
+			stdOutput.push_back(iter->label);
+
+			std::vector<unsigned int> stdPred;
+			stdPred.push_back(model(iter->input));
+
+			data.inputs.push_back(stdInput);
+			data.outputs.push_back(stdOutput);
+			data.preds.push_back(stdPred);
+		}
+		return std::move(data);
+	}
+
+	Prediction SVMPredictor::predictionOfNewInput(std::vector<std::function<bool(double)>> predicates) {
+		using namespace std;
+		using namespace shark;
+	
+		Prediction data;
+		CondFolds condFolds{*m_data, predicates};
+		ClassificationDataset training = condFolds.training();
+		ClassificationDataset validation = condFolds.validation();
+
+		std::vector<Prediction> dataVector;	
+		const AbstractKernelFunction<RealVector>* kernel = m_trainer->kernel();
+
+		KernelClassifier<RealVector> model;
+
+		m_trainer->train(model, training);
+
+		auto elements = validation.elements();
 		for (auto iter = elements.begin(); iter != elements.end(); ++iter) {
 			std::vector<double> stdInput;
 			for (size_t i = 0; i < iter->input.size(); ++i) {

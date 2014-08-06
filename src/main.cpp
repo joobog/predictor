@@ -31,7 +31,8 @@ namespace {
 enum class PredictionType {
 	CV,  // CrossValidation
 	ICV, // InverseCrossValidation
-	SD   // SameData
+	SD,  // SameData
+	IP,  // Interpolation
 };
 
 std::string filenameGenerator(
@@ -60,6 +61,9 @@ std::string filenameGenerator(
 			break;
 		case PredictionType::SD:
 			filename += "-sd";
+			break;
+		case PredictionType::IP:
+			filename += "-ip";
 			break;
 		default:
 			filename +="-unknown";
@@ -99,6 +103,8 @@ int main ( int argc, char *argv[] )
 	bool separateFiles;
 	std::vector<std::string> rawFunctions;
 	std::vector<std::shared_ptr<mu::Parser>> functions;
+	std::vector<std::string> rawPredicates;
+	std::vector<std::function<bool(double)>> predicates;
 	PredictionType predictionType;
 
 	// nasty but a working solution
@@ -118,8 +124,9 @@ int main ( int argc, char *argv[] )
 			("svm-gamma"         , bpo::value<double>()->default_value(0.5)     , "svm kernel gamma parameter")
 			("csv-output-file"   , bpo::value<string>()                         , "csv output file")
 			("csv-input-file"    , bpo::value<string>()                         , "csv input file")
-			("prediction-type", bpo::value<string>()->default_value("cv"), "CrossValidation (cv), InverseCrossValidation(icv), SameData(sd)")
-			("transform", bpo::value<std::vector<std::string>>()->multitoken(), "list of function (see documentation of fparser)");
+			("prediction-type", bpo::value<string>()->default_value("cv"), "CrossValidation (cv), InverseCrossValidation(icv), SameData(sd), Interpolation(ip)")
+			("transform", bpo::value<std::vector<std::string>>()->multitoken(), "list of function (see documentation of fparser)")
+			("predicates", bpo::value<std::vector<std::string>>()->multitoken(), "list of conditions (for interpolatino)");
 //			("statistics"        , bpo::value<string>()                         , "statistics output file")
 //			("alg-output-config" , bpo::value<string>()                         , "algorithm output configuration file")
 //			("alg-input-config"  , bpo::value<string>()                         , "algorithm input configuration file");
@@ -216,6 +223,36 @@ int main ( int argc, char *argv[] )
 				
 			}
 
+
+			if (vm.count("predicates")) {
+				rawPredicates = vm["predicates"].as<std::vector<string>>();
+				for (const std::string rawPredicate : rawPredicates) {
+					if (rawPredicate == "-") {
+						predicates.push_back(nullptr);
+					}
+					else {
+						std::shared_ptr<mu::Parser> predicateParser = std::make_shared<mu::Parser>();;
+						double x = 0;
+						predicateParser->DefineVar("x",  &x);
+						predicateParser->SetExpr(rawPredicate);
+						auto predicate = [predicateParser](double value)->bool
+						{
+							mu::varmap_type vars = predicateParser->GetVar();
+							if (vars.count("x")) {
+								double* xVar = vars["x"]; 
+								*xVar = value;
+								return predicateParser->Eval();
+							}
+							else {
+								return false;
+							}
+						};
+						predicates.push_back(predicate);
+					}
+				}
+				
+			}
+
 			/*
 			 * Input and output filenames
 			 */
@@ -262,6 +299,9 @@ int main ( int argc, char *argv[] )
 				}
 				else if (rawPredictionType == "sd") {
 					predictionType = PredictionType::SD;
+				}
+				else if (rawPredictionType == "ip") {
+					predictionType = PredictionType::IP;
 				}
 				else {
 					std::cout << "ERROR: unknown prediciton type: " << rawPredictionType << endl;
@@ -334,6 +374,7 @@ int main ( int argc, char *argv[] )
 			exportCSV(predictionList, outputFilename, ';');
 			std::cout << "Output is written to " << outputFilename << endl;
 			break;
+
 		case PredictionType::ICV:
 			for (auto& predictor : predictorList) {
 				predictor->data(&data);
@@ -349,6 +390,7 @@ int main ( int argc, char *argv[] )
 				}
 			}
 			break;
+
 		case PredictionType::SD:
 			for (auto& predictor : predictorList) {
 				predictor->data(&data);
@@ -361,6 +403,21 @@ int main ( int argc, char *argv[] )
 			exportCSV(predictionList, outputFilename, ';');
 			std::cout << "Output is written to " << outputFilename << endl;
 			break;
+
+		case PredictionType::IP:
+			cout << "Start prediction of new Data" << endl;
+			for (auto& predictor : predictorList) {
+				predictor->data(&data);
+				Prediction prediction = predictor->predictionOfNewInput(predicates);
+				predictionList.push_back(prediction);
+			}
+			if (outputFilename.empty()) {
+				outputFilename = filenameGenerator(inputFilename, predictorList, rawFunctions, PredictionType::IP);
+			}
+			exportCSV(predictionList, outputFilename, ';');
+			std::cout << "Output is written to " << outputFilename << endl;
+			break;
+
 		default:
 			break;	
 	}

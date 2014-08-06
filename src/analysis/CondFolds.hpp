@@ -1,12 +1,12 @@
 /*
  * =====================================================================================
  *
- *       Filename:  DTreeAnalyser.hpp
+ *       Filename:  CondFolds.hpp
  *
  *    Description:  
  *
  *        Version:  1.0
- *        Created:  07/09/2014 10:07:45 PM
+ *        Created:  08/05/2014 12:24:40 PM
  *       Revision:  none
  *       Compiler:  gcc
  *
@@ -17,37 +17,38 @@
  */
 
 
+#ifndef  CondFolds_INC
+#define  CondFolds_INC
 
-#ifndef  DTreeAnalyser_INC
-#define  DTreeAnalyser_INC
+#include <shark/Data/Dataset.h>
+#include <muParser.h>
 
-#include "analysis/Predictor.hpp"
+#include <functional>
+#include <vector>
 
 namespace mlta {
 
 	/*
 	 * =====================================================================================
-	 *        Class:  DTreeAnalyser
+	 *        Class:  CondFolds
 	 *  Description:  
 	 * =====================================================================================
 	 */
-	class DTreePredictor : public Predictor
+	class CondFolds
 	{
 		public:
 			/* ====================  LIFECYCLE     ======================================= */
-				DTreePredictor() {
-					m_name = "DTree";
-				}
+			CondFolds (shark::ClassificationDataset const& data, std::vector<std::function<bool(double)>> predicates);
+
 			/* ====================  ACCESSORS     ======================================= */
 
 			/* ====================  MUTATORS      ======================================= */
 
 			/* ====================  OPERATORS     ======================================= */
 
-			Prediction predictionCV() override;
-			std::vector<Prediction> predictionInverseCV() override;
-			Prediction predictionOnSameData() override;
-			Prediction predictionOfNewInput(std::vector<std::function<bool(double)>> predicates) override;
+			shark::ClassificationDataset training();
+			shark::ClassificationDataset validation();
+
 
 		protected:
 			/* ====================  METHODS       ======================================= */
@@ -58,8 +59,11 @@ namespace mlta {
 			/* ====================  METHODS       ======================================= */
 
 			/* ====================  DATA MEMBERS  ======================================= */
-
-	}; /* -----  end of class DTreeAnalyser  ----- */
-
+			std::vector<std::function<bool(double)>> m_predicates;
+			shark::ClassificationDataset m_data;
+			shark::ClassificationDataset m_training;
+			shark::ClassificationDataset m_validation;
+	}; /* -----  end of class CondFolds  ----- */
 }		/* -----  end of namespace mlta  ----- */
-#endif   /* ----- #ifndef DTreeAnalyser_INC  ----- */
+#endif   /* ----- #ifndef CondFolds_INC  ----- */
+

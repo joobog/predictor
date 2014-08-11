@@ -58,16 +58,6 @@ namespace mlta {
 				return index;
 			}
 
-			static size_t arg_max_mod(shark::RealVector v) {
-				size_t index = 0;
-				for (size_t i = 0; i < v.size(); ++i) {
-					if (v[i] > v[index] && v[i] != 1) {
-						index = i;
-					}
-				}
-				return index;
-			}
-
 			static unsigned int max(const shark::CVFolds<shark::ClassificationDataset>&  folds) {
 				using namespace shark;
 
@@ -105,6 +95,5 @@ namespace mlta {
 			/* ====================  DATA MEMBERS  ======================================= */
 
 	}; /* -----  end of class Helpers  ----- */
-
 }		/* -----  end of namespace mlta  ----- */
 #endif   /* ----- #ifndef Helpers_INC  ----- */

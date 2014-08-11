@@ -23,49 +23,65 @@
 
 namespace mlta {
 
-	Prediction SVMPredictor::predictionCV() {
+	/**
+	 * @brief 
+	 *
+	 * @param data
+	 *
+	 * @return 
+	 */
+	shark::KernelClassifier<shark::RealVector>
+	SVMPredictor::createKernelClassifierModel(shark::ClassificationDataset& data) {
+			using namespace shark;
+			KernelClassifier<RealVector> model;
+			m_trainer->train(model, data);
+			return model;
+		}
+
+
+
+	/**
+	 * @brief 
+	 *
+	 * @return 
+	 */
+	Prediction 
+	SVMPredictor::predictionCV(const size_t nFolds) {
 		using namespace std;
 		using namespace shark;
 		
-		const AbstractKernelFunction<RealVector>* kernel = m_trainer->kernel();
-		CVFolds<ClassificationDataset> folds = createCVSameSizeBalanced(*m_data, m_nFolds);
+		CVFolds<ClassificationDataset> folds = createCVSameSizeBalanced(*m_data, nFolds);
 		Prediction data;
 
 		for (size_t fold = 0; fold < folds.size(); ++fold) {
 			ClassificationDataset training = folds.training(fold);
 			ClassificationDataset validation = folds.validation(fold);
-			KernelClassifier<RealVector> model;
 
-			m_trainer->train(model, training);
+			auto model = createKernelClassifierModel(training);
 
 			auto elements = validation.elements();
 			for (auto iter = elements.begin(); iter != elements.end(); ++iter) {
-				std::vector<double> stdInput;
-				for (size_t i = 0; i < iter->input.size(); ++i) {
-					stdInput.push_back(iter->input[i]);
-				}
-
-				std::vector<unsigned int> stdOutput;
-				stdOutput.push_back(iter->label);
-
-				std::vector<unsigned int> stdPred;
-				stdPred.push_back(model(iter->input));
-
-				data.inputs.push_back(stdInput);
-				data.outputs.push_back(stdOutput);
-				data.preds.push_back(stdPred);
+				append(data, iter->input, iter->label, model(iter->input));
 			}
 		}
 	return std::move(data);
 	}
 
-	std::vector<Prediction> SVMPredictor::predictionInverseCV() {
+
+
+	/**
+	 * @brief 
+	 *
+	 * @return 
+	 */
+	std::vector<Prediction> 
+	SVMPredictor::predictionInverseCV(const size_t nFolds) {
 		using namespace std;
 		using namespace shark;
 	
 		std::vector<Prediction> dataVector;	
 		const AbstractKernelFunction<RealVector>* kernel = m_trainer->kernel();
-		CVFolds<ClassificationDataset> folds = createCVSameSizeBalanced(*m_data, m_nFolds);
+		CVFolds<ClassificationDataset> folds = createCVSameSizeBalanced(*m_data, nFolds);
 		Prediction data;
 
 		for (size_t fold = 0; fold < folds.size(); ++fold) {
@@ -78,27 +94,22 @@ namespace mlta {
 
 			auto elements = validation.elements();
 			for (auto iter = elements.begin(); iter != elements.end(); ++iter) {
-				std::vector<double> stdInput;
-				for (size_t i = 0; i < iter->input.size(); ++i) {
-					stdInput.push_back(iter->input[i]);
-				}
-
-				std::vector<unsigned int> stdOutput;
-				stdOutput.push_back(iter->label);
-
-				std::vector<unsigned int> stdPred;
-				stdPred.push_back(model(iter->input));
-
-				data.inputs.push_back(stdInput);
-				data.outputs.push_back(stdOutput);
-				data.preds.push_back(stdPred);
+				append(data, iter->input, iter->label, model(iter->input));
 			}
 			dataVector.push_back(data);
 		}
 		return std::move(dataVector);
 	}
 
-	Prediction SVMPredictor::predictionOnSameData() {
+
+
+	/**
+	 * @brief 
+	 *
+	 * @return 
+	 */
+	Prediction 
+	SVMPredictor::predictionOnSameData() {
 		using namespace std;
 		using namespace shark;
 	
@@ -111,25 +122,22 @@ namespace mlta {
 
 		auto elements = m_data->elements();
 		for (auto iter = elements.begin(); iter != elements.end(); ++iter) {
-			std::vector<double> stdInput;
-			for (size_t i = 0; i < iter->input.size(); ++i) {
-				stdInput.push_back(iter->input[i]);
-			}
-
-			std::vector<unsigned int> stdOutput;
-			stdOutput.push_back(iter->label);
-
-			std::vector<unsigned int> stdPred;
-			stdPred.push_back(model(iter->input));
-
-			data.inputs.push_back(stdInput);
-			data.outputs.push_back(stdOutput);
-			data.preds.push_back(stdPred);
+			append(data, iter->input, iter->label, model(iter->input));
 		}
 		return std::move(data);
 	}
 
-	Prediction SVMPredictor::predictionOfNewInput(std::vector<std::function<bool(double)>> predicates) {
+
+
+	/**
+	 * @brief 
+	 *
+	 * @param predicates
+	 *
+	 * @return 
+	 */
+	Prediction 
+	SVMPredictor::predictionOfNewInput(std::vector<std::function<bool(double)>> predicates) {
 		using namespace std;
 		using namespace shark;
 	
@@ -147,29 +155,8 @@ namespace mlta {
 
 		auto elements = validation.elements();
 		for (auto iter = elements.begin(); iter != elements.end(); ++iter) {
-			std::vector<double> stdInput;
-			for (size_t i = 0; i < iter->input.size(); ++i) {
-				stdInput.push_back(iter->input[i]);
-			}
-
-			std::vector<unsigned int> stdOutput;
-			stdOutput.push_back(iter->label);
-
-			std::vector<unsigned int> stdPred;
-			stdPred.push_back(model(iter->input));
-
-			data.inputs.push_back(stdInput);
-			data.outputs.push_back(stdOutput);
-			data.preds.push_back(stdPred);
+			append(data, iter->input, iter->label, model(iter->input));
 		}
 		return std::move(data);
 	}
 }		/* -----  end of namespace mlta  ----- */
-
-
-//		ZeroOneLoss<unsigned int> loss;
-//		CVFolds<ClassificationDataset> folds = createCVSameSizeBalanced(m_data, m_nFolds);
-//		CrossValidationError<KernelClassifier<RealVector>, unsigned int> cvError(
-//				folds, &trainer,&model, &trainer, &loss
-//				);
-//		std::cout << "SVM: Error: " << cvError(trainer.parameterVector()) << std::endl;

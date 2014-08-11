@@ -6,8 +6,8 @@ LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${SCRIPTPATH}/.."
 cd ${SCRIPTPATH}
 
 #find ${SCRIPTPATH}/.. -type f -name "dataset3-*csv" -exec ${SCRIPTPATH}/visualize.sh '{}' & \;
-FILES=$( find ${SCRIPTPATH}/.. -type f -name "dataset3-McSvm*csv" )
-
+#FILES=$( find ${SCRIPTPATH}/../data/dataset3_201408061511 -type f -name "dataset3*csv" )
+FILES=$( find ${SCRIPTPATH}/../../betke/plots/dataset_20140811* -type f -name "dataset*csv" )
 for FILE in ${FILES[@]}
 do
 	${SCRIPTPATH}/visualize.sh "$FILE" &

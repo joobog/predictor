@@ -21,15 +21,14 @@
 #ifndef  SVMPredictor_INC
 #define  SVMPredictor_INC
 
-#include "Predictor.hpp"
+#include <iostream>
 
+#include "Predictor.hpp"
 #include "Helpers.hpp"
 
 #include <shark/Data/CVDatasetTools.h>
-
 #include <shark/Models/Kernels/GaussianRbfKernel.h>
 #include <shark/ObjectiveFunctions/Loss/ZeroOneLoss.h>
-
 #include <shark/Algorithms/Trainers/McSvmOVATrainer.h>
 #include <shark/Algorithms/Trainers/McSvmADMTrainer.h>
 #include <shark/Algorithms/Trainers/McSvmWWTrainer.h>
@@ -63,12 +62,13 @@ namespace mlta {
 
 			/* ====================  OPERATORS     ======================================= */
 
-			Prediction predictionCV() override;
-			std::vector<Prediction> predictionInverseCV() override;
+			Prediction predictionCV(const size_t nFolds) override;
+			std::vector<Prediction> predictionInverseCV(const size_t nFolds) override;
 			Prediction predictionOnSameData() override;
 			Prediction predictionOfNewInput(std::vector<std::function<bool(double)>> predicates) override;
 		protected:
 			/* ====================  METHODS       ======================================= */
+			shark::KernelClassifier<shark::RealVector> createKernelClassifierModel(shark::ClassificationDataset& data);
 
 			/* ====================  DATA MEMBERS  ======================================= */
 

@@ -106,6 +106,7 @@ int main ( int argc, char *argv[] )
 	std::vector<std::string> rawPredicates;
 	std::vector<std::function<bool(double)>> predicates;
 	PredictionType predictionType;
+	size_t nFolds = 0;
 
 	// nasty but a working solution
 	// kernel must exist until the prediction is done
@@ -117,16 +118,19 @@ int main ( int argc, char *argv[] )
 		desc.add_options()
 			("help"              , "produce help message")
 			("alg"               , bpo::value<std::vector<std::string>>()->multitoken() , "learning algorithm (dtree ann svm)")
-			("svm-trainer"       , bpo::value<std::vector<std::string>>()->multitoken()    , "ova adm ww ats mmr cs atm llw")
-			("svm-offset"        , bpo::value<bool>()->default_value(false)     , "svm trainer offset")
-			("svm-unconstrained" , bpo::value<bool>()->default_value(false)     , "svm trainer unconstrained")
-			("svm-regulation"    , bpo::value<double>()->default_value(1000.0)  , "svm trainer regulation parameter")
-			("svm-gamma"         , bpo::value<double>()->default_value(0.5)     , "svm kernel gamma parameter")
-			("csv-output-file"   , bpo::value<string>()                         , "csv output file")
-			("csv-input-file"    , bpo::value<string>()                         , "csv input file")
-			("prediction-type", bpo::value<string>()->default_value("cv"), "CrossValidation (cv), InverseCrossValidation(icv), SameData(sd), Interpolation(ip)")
-			("transform", bpo::value<std::vector<std::string>>()->multitoken(), "list of function (see documentation of fparser)")
-			("predicates", bpo::value<std::vector<std::string>>()->multitoken(), "list of conditions (for interpolatino)");
+			("svm-trainer"       , bpo::value<std::vector<std::string>>()->multitoken() , "ova adm ww ats mmr cs atm llw")
+			("svm-offset"        , bpo::value<bool>()->default_value(false)             , "svm trainer offset")
+			("svm-unconstrained" , bpo::value<bool>()->default_value(false)             , "svm trainer unconstrained")
+			("svm-regulation"    , bpo::value<double>()->default_value(1000.0)          , "svm trainer regulation parameter")
+			("svm-gamma"         , bpo::value<double>()->default_value(0.5)             , "svm kernel gamma parameter")
+			("csv-output-file"   , bpo::value<string>()                                 , "csv output file")
+			("csv-input-file"    , bpo::value<string>()                                 , "csv input file")
+			("prediction-type"   , bpo::value<string>()->default_value("cv")            , "CrossValidation (cv),, InverseCrossValidation(icv) , SameData(sd) , Interpolation(ip)")
+			("number-of-folds" , bpo::value<size_t>()->default_value(5), "number of folds")
+			("transform"         , bpo::value<std::vector<std::string>>()->multitoken() , "list of function (see documentation of fparser)")
+			("predicates"        , bpo::value<std::vector<std::string>>()->multitoken() , "list of conditions (for interpolatino)");
+
+// TODO
 //			("statistics"        , bpo::value<string>()                         , "statistics output file")
 //			("alg-output-config" , bpo::value<string>()                         , "algorithm output configuration file")
 //			("alg-input-config"  , bpo::value<string>()                         , "algorithm input configuration file");
@@ -141,6 +145,10 @@ int main ( int argc, char *argv[] )
 				return SUCCESS;
 			}
 		
+			if (vm.count("number-of-folds")) {
+				nFolds=vm["number-of-folds"].as<size_t>();
+			}
+
 			/*
 			 * List of learning algorithms
 			 */	
@@ -205,6 +213,7 @@ int main ( int argc, char *argv[] )
 					}
 				}
 			}
+
 
 			if (vm.count("transform")) {
 				rawFunctions = vm["transform"].as<std::vector<string>>();
@@ -343,7 +352,8 @@ int main ( int argc, char *argv[] )
 	shark::ClassificationDataset data;
 
 	try {
-		shark::importCSV(data, inputFilename, shark::LAST_COLUMN, ';');
+		importCSV(data, inputFilename, shark::LAST_COLUMN, ',', '#', ClassificationDataset::DefaultBatchSize, 1);
+		
 	}
 	catch (shark::Exception e) {
 		std::cout << "Unable to open file " << inputFilename <<  ". Check paths!" << std::endl;
@@ -365,27 +375,27 @@ int main ( int argc, char *argv[] )
 		case PredictionType::CV:
 			for (auto& predictor : predictorList) {
 				predictor->data(&data);
-				Prediction prediction = predictor->predictionCV();
+				Prediction prediction = predictor->predictionCV(nFolds);
 				predictionList.push_back(prediction);
 			}
 			if (outputFilename.empty()) {
 				outputFilename = filenameGenerator(inputFilename, predictorList, rawFunctions, PredictionType::CV);
 			}
-			exportCSV(predictionList, outputFilename, ';');
+			exportCSV(predictionList, outputFilename, ',');
 			std::cout << "Output is written to " << outputFilename << endl;
 			break;
 
 		case PredictionType::ICV:
 			for (auto& predictor : predictorList) {
 				predictor->data(&data);
-				std::vector<Prediction> predictions = predictor->predictionInverseCV();
+				std::vector<Prediction> predictions = predictor->predictionInverseCV(nFolds);
 				if (outputFilename.empty()) {
 				outputFilename = filenameGenerator(inputFilename, predictorList, rawFunctions, PredictionType::ICV);
 				}
 				for (size_t i = 0; i < predictions.size(); ++i) {
 					std::vector<Prediction> predictionList{};
 					predictionList.push_back(predictions[i]);
-					exportCSV(predictionList, appendFoldNum(outputFilename, i), ';');
+					exportCSV(predictionList, appendFoldNum(outputFilename, i), ',');
 					std::cout << "Output is written to " << outputFilename << endl;
 				}
 			}
@@ -400,7 +410,7 @@ int main ( int argc, char *argv[] )
 			if (outputFilename.empty()) {
 				outputFilename = filenameGenerator(inputFilename, predictorList, rawFunctions, PredictionType::SD);
 			}
-			exportCSV(predictionList, outputFilename, ';');
+			exportCSV(predictionList, outputFilename, ',');
 			std::cout << "Output is written to " << outputFilename << endl;
 			break;
 
@@ -414,7 +424,7 @@ int main ( int argc, char *argv[] )
 			if (outputFilename.empty()) {
 				outputFilename = filenameGenerator(inputFilename, predictorList, rawFunctions, PredictionType::IP);
 			}
-			exportCSV(predictionList, outputFilename, ';');
+			exportCSV(predictionList, outputFilename, ',');
 			std::cout << "Output is written to " << outputFilename << endl;
 			break;
 

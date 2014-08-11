@@ -23,13 +23,25 @@
 namespace mlta {
 
 	bool isValidation(shark::ClassificationDataset::InputType input, std::vector<std::function<bool(double)>> predicates) {
-		bool result = true;
-		for ( size_t i = 0; i < predicates.size(); ++i) {
-			if (predicates[i] != nullptr) {
-				result = result && predicates[i](input[i]);
+		if (!predicates.empty()) {
+
+			size_t counter = 0;
+			for (auto& p : predicates) {
+				if (p == nullptr) {
+					++counter;
+				}
+			}
+
+			if (counter < predicates.size()) {
+				for ( size_t i = 0; i < predicates.size(); ++i) {
+					if (predicates[i] != nullptr) {
+						if (!predicates[i](input[i])) return false;
+					}
+				}
 			}
 		}
-		return result;
+
+		return true;
 	}
 
 	CondFolds::CondFolds (shark::ClassificationDataset const& data, std::vector<std::function<bool(double)>> predicates) 

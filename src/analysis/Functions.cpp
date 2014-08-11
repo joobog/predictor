@@ -48,6 +48,16 @@ namespace mlta {
 		}
 	}
 
+
+
+	/**
+	 * @brief Export prediction to csv file
+	 *
+	 * @param data
+	 * @param fn
+	 * @param separator
+	 * @param comment
+	 */
 	void exportCSV(const std::vector<Prediction>& data, std::string fn, char separator, char comment) {
 		using namespace std;
 
@@ -87,6 +97,51 @@ namespace mlta {
 		output_file.close();
 	}
 
+
+	/**
+	 * @brief CSV import function, based on shark conventions
+	 *
+	 * @param data output
+	 * @param fn filename
+	 * @param lp position of the label column
+	 * @param separator 
+	 * @param comment
+	 * @param maximumBatchSize
+	 * @param titleLines number of lines reserver for the title
+	 */
+	void importCSV(
+			shark::LabeledData<shark::RealVector, unsigned int>& data,
+			std::string fn,
+			shark::LabelPosition lp,
+			char separator,
+			char comment,
+			std::size_t maximumBatchSize,
+			std::size_t titleLines
+			){
+		using namespace shark;
+		std::ifstream stream(fn.c_str());
+		stream.unsetf(std::ios::skipws);
+
+		for(std::size_t i=0; i < titleLines; ++i) // ignoring the first lines
+			stream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+		std::istream_iterator<char> streamBegin(stream);
+		std::string contents(//read contents of file in string
+				streamBegin,
+				std::istream_iterator<char>()
+				);
+		//call the actual parser
+		csvStringToData(data,contents,lp,separator,comment,maximumBatchSize);
+	}
+
+
+
+	/**
+	 * @brief Print prediction
+	 *
+	 * @param data
+	 * @param separator
+	 */
 	void print(const Prediction& data, char separator) {
 		using namespace std;
 

@@ -24,7 +24,7 @@ namespace mlta {
 	{
 		public:
 			/* ====================  LIFECYCLE     ======================================= */
-			Predictor() : m_nFolds{5}{};
+			Predictor(){};
 
 			/* ====================  ACCESSORS     ======================================= */
 
@@ -32,8 +32,8 @@ namespace mlta {
 
 			/* ====================  OPERATORS     ======================================= */
 			virtual void data(shark::ClassificationDataset* data) {m_data = data;}
-			virtual Prediction predictionCV() = 0;
-			virtual std::vector<Prediction> predictionInverseCV() = 0;
+			virtual Prediction predictionCV(const size_t nFolds) = 0;
+			virtual std::vector<Prediction> predictionInverseCV(const size_t nFolds) = 0;
 			virtual Prediction predictionOnSameData() = 0;
 			virtual Prediction predictionOfNewInput(std::vector<std::function<bool(double)>> predicates) = 0;
 			virtual std::string name() {return m_name;}
@@ -45,7 +45,6 @@ namespace mlta {
 
 			shark::ClassificationDataset* m_data;
 			std::string m_name;
-			unsigned int m_nFolds;
 		private:
 			/* ====================  METHODS       ======================================= */
 

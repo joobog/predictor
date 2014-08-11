@@ -26,7 +26,6 @@ Als Lerndaten werden alle Daten benutzt. Dann sollen wieder alle Daten fuer Vora
 Wie gut funktioniert das Verfahren, wenn wir (1) bestimmte Gruppen von Messungen ausblenden, (2) auf den restlichen Daten lernen und (3) die ausgeblendeten Gruppen wieder voraussagen? Das Verfahren soll erstmal auf Buffer angewendet werden.
 
 
-
 3. Daten
 
 Auf Spalten sollen diverse Funktionen angewendet werden und Machine Learning angewendet werden. Danach soll geschaut werden, ob die Qualität (siehe: Qualität der Voraussagen) steigt oder sinkt. Es handelt sich erstmal und ein Blindversuch. 
@@ -46,3 +45,20 @@ p : int Voraussage
 F : int Füllstand
 B : int Buffer
 D : bool Datasieving 
+
+
+
+6. Klassenproblem
+
+Die Vorhersage der Werte wurde auf das Klassenproblem verlagert, d.h. wir sagen nicht konkrete Werte vorher sondern Klassen. Beim ersten Verfahren war jede Klasse mit werden 0 - 128 durchnummeriert. Dieser Wert bedeutete auch gleichzeitig die Performance. Hat also der Algorithmus zu einem bestimmten Input die Klasse 53 vorhergesagt, so bedeutete es die Performance von 53MB/s. Diese Methode hat aber eine ganze Reihe von Nachteilen. (1) Der relative Fehler ist ist nicht konstant. (2) Mit steigender Performance steigt die Anzahl der Klassen. 
+
+Es ist so, dass je grosser die Performance ist, desto vernachlaessigbar ist der absoluter Fehler. Beispiel: bei 90MB/s ist der Fehler von +-5MB/s bedeutent, bei 900MB/s ist der Fehler von 5MB/s nicht mehr so bedeutent. 
+
+Die Anzahl von Bin sollte man aus technischen Gruenden konstant halten. Die Algorithmen, die wir verwenden arbeiten wesentlich langsamer mit vielen Bins. Deshalb sollte man sich aus technischer Sicht auf eine vernünftige Anzahl von Bins einigen und daraus dann andere Werte berechnen. Aus praktischer Sicht ist der relativer Fehler wichtig und man sollte andere Werte in Ahaengigkeit von relativen Fehler berechnen. Offensichtlich ist das Problem, dass die Anzahl der Bins und der relativer Fehler gegenseitig von einander abhaengen.
+
+
+
+7.  Fehlerkurve
+Eine sehr interessante Information ist, wie verlaeuft die Fehlerkurve. Es soll ein Graph erstellt werden der absolute Fehler in Anbhaengikeit von Anzahl von Inputs.
+
+

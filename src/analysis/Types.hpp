@@ -21,6 +21,8 @@
 #define  Types_INC
 
 #include <shark/Data/Dataset.h>
+//#include <boost/numeric/ublas/matrix.hpp>
+//#include <boost/numeric/ublas/io.hpp>
 
 #include <vector>
 
@@ -41,5 +43,24 @@ namespace mlta {
 		std::vector<std::vector<unsigned int>> preds;
 		std::vector<std::string> predLabels;
 	};	
+
+	void append(
+			Prediction& data, 
+			const shark::blas::vector<double> input,
+			const unsigned int label,
+			const unsigned int prediction);
+
+//	template< typename T >
+//	struct DataGroup {
+//		std::vector<std::string> labels;
+//		std::vector<std::vector<T>> data;
+//	};
+//
+//	template< typename InputType, typename LabelType, typename OutputType >
+//	struct Prediction {
+//		CsvDataGroup<InputType> inputs;
+//		CsvDataGroup<LabelTypeType> labels;
+//		CsvDataGroup<OutputType> outputs;
+//	};
 }		/* -----  end of namespace mlta  ----- */
 #endif   /* ----- #ifndef Types_INC  ----- */

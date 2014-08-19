@@ -20,14 +20,19 @@ SCRIPTPATH=$( dirname "${SCRIPT}" )
 
 ### CONFIG ###
 # If true, shows a list of files.
-DRYRUN=false
+export DRYRUN=false
 SCRIPT_DEBUG=0
 
 # File
 if [ "$1" == "" ]; then
 	#CSVINFILE=$( readlink -f ${SCRIPTPATH}/../data/dataset3.csv )
 	#CSVINFILE=$( readlink -f ${SCRIPTPATH}/../data/irisdb.csv )
-	CSVINFILE=$( readlink -f ${SCRIPTPATH}/../../betke/plots/dataset.csv )
+	#CSVINFILE=$( readlink -f ${SCRIPTPATH}/../../betke/plots/prediction_error/averageDataGap.csv )
+	#CSVINFILE=$( readlink -f ${SCRIPTPATH}/../../betke/plots/prediction_error/datasetDataGap.csv )
+	#CSVINFILE=$( readlink -f ${SCRIPTPATH}/../../betke/plots/prediction_error/averageFillGap.csv )
+	#CSVINFILE=$( readlink -f ${SCRIPTPATH}/../../betke/plots/prediction_error/datasetFillGap.csv )
+	#CSVINFILE=$( readlink -f ${SCRIPTPATH}/../../betke/exp/cleaned/data-gap/input.csv )
+	CSVINFILE=$( readlink -f ${SCRIPTPATH}/../../betke/exp/cleaned/fill-gap/input.csv )
 else
 	CSVINFILE=$( readlink -f $1 )
 fi
@@ -37,10 +42,10 @@ fi
 # SVMTRAINERS=( 'ova' 'adm' 'ww' 'ats' 'cs' 'atm' 'llw' )
 # TYPES=( 'cv' 'icv' 'sd' 'ip' )
 
-ALGORITHMS=( 'dtree' )
-SVMTRAINERS=( 'ova' )
-TYPES=( 'icv' )
-FOLDNUMSET=( 2 4 8 16 32 64 )
+ALGORITHMS=( 'dtree' 'svm' )
+SVMTRAINERS=( 'ww' )
+TYPES=( 'cv' 'icv' 'ip' 'sd' )
+FOLDNUMSET=( 2 4 8 16 32 64 128 256 )
 
 # BASH doesn't support multidimensional array directly.
 # Define an array and put it in the FUNCTIONSETS array.
@@ -56,6 +61,7 @@ PSET2=( '-' '-' '-' 'x==4' )
 PREDICATESETS=( 'PSET0[@]' )
 ### END CONFIG ###
 
+export JOBS=""
 
 debug() {
 	[[ ${SCRIPT_DEBUG} == 1 ]] && "$@" || true 
@@ -65,16 +71,16 @@ logger() {
 	echo "$@"
 }
 
-run() {
+
+collect_jobs() {
 	local _command="$1"
 	local _log="$2"
-	if ${DRYRUN}; then eval echo "${_command}"; fi
+	if ${DRYRUN}; then 
+		eval echo "${_command}"; 
+		eval echo "${_log}"; 
+	fi
 	if ! ${DRYRUN}; then 
-		echo "" > ${_log}
-		eval echo "${_command}" >> ${_log}
-		echo `date` >> ${_log}
-		eval "${_command}" &>> ${_log}
-		echo `date` >> ${_log}
+		JOBS="$JOBS $( eval echo ${_command} )\n$( eval echo ${_log} )\n"
 	fi
 }
 
@@ -83,39 +89,58 @@ run() {
 # Generate output filename
 # Optional arguments can be empty strings
 #
+# /workdir/ptype/alg/trainer/transform/predicate/fold#
+# /home/joobog/git/cv/svm/ww/trans-log(x)/pred-x>100/fold-8
 function makeOutFilename() 
 {
 	local _workdir="$1"    # required
-	local	_filename="$2"   # reguired
+	local _ptype="$2"      # required
 	local _alg="$3"        # required
+
 	local _trainer="$4"    # optional
 	local _functions="$5"  # optional
 	local _predicates="$6" # optional
-	local _ptype="$7"      # required
-	local _foldnum="$8"    # optional
+	local _foldnum="$7"    # optional
+	local _timestamp="$8"  # optional
 
-	__result="${_filename}_${_alg}"
+	### (1) ### TYPE
+	__result="${_ptype}"
+
+	### (1.2) ### TIMESTAMP
+	if [ "${_timestamp}" != "" ]; then
+		__result="${__result}_${_timestamp}"
+	fi
+
+	### (2) ###	ALGORITHM
+	__result="${__result}/${_alg}"
+
+	### (3) ### OPTIONAL TRAINER
 	if [ "${_trainer}" != "" ]; then
-		__result="${__result}_${_trainer}"
+		__result="${__result}/${_trainer}"
 	fi
-	if [ "${_functions}" != "" ]; then
-		#_functions=$( echo ${_functions[*]} | tr -d ' ' )
+
+	### (4) ### OPTIONAL TRANSFORMATION
+	if [ "${_functions}" != "" -a "${_functions}" != "-" ]; then
 		_functions="${_functions// /#}"
-		__result="${__result}_trans_${_functions}"
+		__result="${__result}/trans_${_functions}"
 	fi
-	if [ "${_predicates}" != "" ]; then
-		#_predicates=$( echo ${_predicates[*]} | tr -d ' ' )
+
+	### (5) ### OPTIONAL PREDICATES
+	if [ "${_predicates}" != "" -a "${_predicates}" != "-" ]; then
 		_predicates="${_predicates// /#}"
-		__result="${__result}_pred_${_predicates}"
+		__result="${__result}/pred-${_predicates}"
 	fi
-	__result="${__result}_${_ptype}"
+
+	### (6) ### OPTIONAL FOLD NUMBER
 	if [ "${_foldnum}" != "" ]; then 
-		__result="${__result}_${_foldnum}"
+		__result="${__result}/folds-${_foldnum}"
 	fi
-	__result="${__result}/${__result}"
+
+	### (7) ### ABSOLUTE PATH
 	__result="${_workdir}/${__result}"
-	__result="${__result}_output.csv"
-	__result="${__result//__/_}"
+
+	### (8) ### COMPLETE FILENAME
+	__result="${__result}/output.csv"
 	echo "${__result}"
 }
 
@@ -142,13 +167,18 @@ CSVINFILEEXT="${CSVINFILEBASE##*.}"
 CSVINFILENAME="${CSVINFILEBASE%.*}"
 
 
-RUNPATH="${CSVINFILEPATH}/${CSVINFILENAME}_`date +%Y%m%d%H%M`"
+RUNPATH="${CSVINFILEPATH}"
+TIMESTAMP="$( date +%Y%m%d%H%M )"
 
-if ! $DRYRUN
+if $DRYRUN
 then
+	echo "dryrun no folder created"
+else
 	if [ ! -d ${RUNPATH} ]; then
 		mkdir -p ${RUNPATH}
 		echo "Results will be saved in ${RUNPATH}"
+	else
+		echo "path exists ${RUNPATH}"
 	fi
 fi
 
@@ -167,73 +197,97 @@ for FUNCTIONSET in "${FUNCTIONSETS[@]}"; do
 					if [ "${TYPE}" == "cv" -o "${TYPE}" == "icv" ]; then
 						for FOLDNUM in "${FOLDNUMSET[@]}"; do
 							debug echo "debug $FOLDNUM"
-							CSVOUTFILE=$( makeOutFilename "${RUNPATH}" "${CSVINFILENAME}" "${ALGORITHM}" "${TRAINER}" "${TMPFUNCSET[*]}" "${TYPE}" "${FOLDNUM}" )
+							CSVOUTFILE=$( makeOutFilename "${RUNPATH}" "${TYPE}" "${ALGORITHM}" "${TRAINER}" "${TMPFUNCSET[*]}" "" "${FOLDNUM}" "${TIMESTAMP}" )
 							CSVOUTPATH=$( dirname "${CSVOUTFILE}" );
 							LOGFILE=$( makeLogFilename "${CSVOUTFILE}" )
 							mkdir -p "${CSVOUTPATH}"
 							COMMAND='${SCRIPTPATH}/../build/predictor --alg=svm --svm-trainer=${TRAINER} --prediction-type=${TYPE} --csv-input-file=${CSVINFILE} --transform="${!FUNCTIONSET}" --number-of-folds="${FOLDNUM}" --csv-output-file=${CSVOUTFILE}'
-							run "${COMMAND}" "${LOGFILE}" &
+							collect_jobs "${COMMAND}" "${LOGFILE}"
 						done
 
 					elif [ ${TYPE} == "ip" ]; then
 						for PREDICATESET in "${PREDICATESETS[@]}"; do
 							debug echo "debug predicates ${!PREDICATESET}"
 							TMPPREDSET="${!PREDICATESET}"
-							CSVOUTFILE=$( makeOutFilename "${RUNPATH}" "${CSVINFILENAME}" "${ALGORITHM}" "${TRAINER}" "${TMPFUNCSET[*]}" "${TMPPREDSET[*]}" "${TYPE}" )
+							CSVOUTFILE=$( makeOutFilename "${RUNPATH}" "${TYPE}" "${ALGORITHM}" "${TRAINER}" "${TMPFUNCSET[*]}" "${TMPPREDSET[*]}" "${FOLDNUM}" "${TIMESTAMP}" )
 							CSVOUTPATH=$( dirname "${CSVOUTFILE}" );
 							LOGFILE=$( makeLogFilename "${CSVOUTFILE}" )
 							mkdir -p "${CSVOUTPATH}"
 							COMMAND='${SCRIPTPATH}/../build/predictor --alg=svm --svm-trainer=${TRAINER} --prediction-type=${TYPE} --csv-input-file=${CSVINFILE} --transform="${!FUNCTIONSET}" --predicates="${!PREDICATESET}" --csv-output-file=${CSVOUTFILE}'
-							run "${COMMAND}" "${LOGFILE}" &
+							collect_jobs "${COMMAND}" "${LOGFILE}"
 						done
 
 					elif [ ${TYPE} == "sd" ]; then
-						CSVOUTFILE=$( makeOutFilename "${RUNPATH}" "${CSVINFILENAME}" "${ALGORITHM}" "${TRAINER}" "${TMPFUNCSET[*]}" "${TYPE}" )
+						CSVOUTFILE=$( makeOutFilename "${RUNPATH}" "${TYPE}" "${ALGORITHM}" "${TRAINER}" "${TMPFUNCSET[*]}" "" "${FOLDNUM}" "${TIMESTAMP}" )
 						CSVOUTPATH=$( dirname "${CSVOUTFILE}" );
 						LOGFILE=$( makeLogFilename "${CSVOUTFILE}" )
 						mkdir -p "${CSVOUTPATH}"
 						COMMAND='${SCRIPTPATH}/../build/predictor --alg=svm --svm-trainer=${TRAINER} --prediction-type=${TYPE} --csv-input-file=${CSVINFILE} --transform="${!FUNCTIONSET}" --csv-output-file=${CSVOUTFILE}'
-							run "${COMMAND}" "${LOGFILE}" &
+							collect_jobs "${COMMAND}" "${LOGFILE}"
 					fi
 
 				done
 			fi
 
 			## Artificial neural networks and decision trees
-			if [ "${ALGORITHM}" == "dtree" ] || [ "${ALGORITHM}" == "ann" ];  then
+			if [ "${ALGORITHM}" == "dtree" -o  "${ALGORITHM}" == "ann" ];  then
 				if [ "${TYPE}" == "cv" -o "${TYPE}" == "icv" ]; then
 					for FOLDNUM in "${FOLDNUMSET[@]}"; do
 						debug echo "debug $FOLDNUM"
-						CSVOUTFILE=$( makeOutFilename "${RUNPATH}" "${CSVINFILENAME}" "${ALGORITHM}" "${TMPFUNCSET[*]}" "${TYPE}" "${FOLDNUM}" )
+						CSVOUTFILE=$( makeOutFilename "${RUNPATH}" "${TYPE}" "${ALGORITHM}" "${TRAINER}" "${TMPFUNCSET[*]}" "" "${FOLDNUM}" "${TIMESTAMP}" )
 						CSVOUTPATH=$( dirname "${CSVOUTFILE}" );
 						LOGFILE=$( makeLogFilename "${CSVOUTFILE}" )
 						mkdir -p "${CSVOUTPATH}"
 						COMMAND='${SCRIPTPATH}/../build/predictor --alg=${ALGORITHM}  --prediction-type=${TYPE} --csv-input-file=${CSVINFILE} --transform="${!FUNCTIONSET}" --number-of-folds="${FOLDNUM}" --csv-output-file=${CSVOUTFILE}'
-						run "${COMMAND}" "${LOGFILE}" &
+						collect_jobs "${COMMAND}" "${LOGFILE}"
 					done
 
 				elif [ ${TYPE} == "ip" ]; then
 					for PREDICATESET in "${PREDICATESETS[@]}"; do
 						debug echo "debug predicates ${!PREDICATESET}"
 						TMPPREDSET="${!PREDICATESET}"
-						CSVOUTFILE=$( makeOutFilename "${RUNPATH}" "${CSVINFILENAME}" "${ALGORITHM}" "${TRAINER}" "${TMPFUNCSET[*]}" "${TMPPREDSET[*]}" "${TYPE}" )
+						CSVOUTFILE=$( makeOutFilename "${RUNPATH}" "${TYPE}" "${ALGORITHM}" "${TRAINER}" "${TMPFUNCSET[*]}" "${TMPPREDSET[*]}" "${FOLDNUM}" "${TIMESTAMP}" )
 						CSVOUTPATH=$( dirname "${CSVOUTFILE}" );
 						LOGFILE=$( makeLogFilename "${CSVOUTFILE}" )
 						mkdir -p "${CSVOUTPATH}"
 						COMMAND='${SCRIPTPATH}/../build/predictor --alg=${ALGORITHM}  --prediction-type=${TYPE} --csv-input-file=${CSVINFILE} --transform="${!FUNCTIONSET}" --predicates="${!PREDICATESET}" --csv-output-file=${CSVOUTFILE}'
-						run "${COMMAND}" "${LOGFILE}" &
+						collect_jobs "${COMMAND}" "${LOGFILE}"
 					done
 
 				elif [ ${TYPE} == "sd" ]; then
-					CSVOUTFILE=$( makeOutFilename "${RUNPATH}" "${CSVINFILENAME}" "${ALGORITHM}" "${TRAINER}" "${TMPFUNCSET[*]}" "${TYPE}" )
+					CSVOUTFILE=$( makeOutFilename "${RUNPATH}" "${TYPE}" "${ALGORITHM}" "${TRAINER}" "${TMPFUNCSET[*]}" "" "${FOLDNUM}" "${TIMESTAMP}" )
 					CSVOUTPATH=$( dirname "${CSVOUTFILE}" );
 					LOGFILE=$( makeLogFilename "${CSVOUTFILE}" )
 					mkdir -p "${CSVOUTPATH}"
 					COMMAND='${SCRIPTPATH}/../build/predictor --alg=${ALGORITHM} --prediction-type=${TYPE} --csv-input-file=${CSVINFILE} --transform="${!FUNCTIONSET}" --csv-output-file=${CSVOUTFILE}'
-					run "${COMMAND}" "${LOGFILE}" &
+					collect_jobs "${COMMAND}" "${LOGFILE}"
 				fi
 			fi
 
 		done
 	done
 done
+
+
+run() {
+	local _command="$1"
+	local _log="$2"
+
+	if ${DRYRUN}; then 
+		eval echo "first param: ${_command}"; 
+		eval echo "second param: ${_log}";
+	fi
+	if ! ${DRYRUN}; then 
+		eval echo "run: ${_command}"; 
+		eval echo "log: ${_log}";
+		echo "" > ${_log}
+		eval echo "${_command}" >> ${_log}
+		echo "started $( date )" >> ${_log}
+		eval "${_command}" &>> ${_log}
+		echo "finished $( date )" >> ${_log}
+	fi
+}
+
+
+export -f run
+echo -e $JOBS | parallel -n 2 -j 16 run {}

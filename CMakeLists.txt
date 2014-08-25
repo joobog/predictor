@@ -8,7 +8,7 @@ set ( Clustering_VERSION_MINOR 0 )
 #set ( CMAKE_CXX_COMPILER /usr/bin/clang++ )
 set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp" )
 set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11" )
-set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3" )
+set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2" )
 #set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always" )
 #set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-register" )
 #set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-return-local-addr" )
@@ -46,15 +46,20 @@ link_directories (
 
 add_executable ( predictor
 	"src/main.cpp"
+	"${ANALYSIS}/ClassMap.cpp"
 	"${ANALYSIS}/Predictor.cpp"
 	"${ANALYSIS}/DTreePredictor.cpp"
-	"${ANALYSIS}/ANNPredictor.cpp"
-	"${ANALYSIS}/SVMPredictor.cpp"
+	"${ANALYSIS}/RFPredictor.cpp"
+	#"${ANALYSIS}/ANNPredictor.cpp"
+	#"${ANALYSIS}/SVMPredictor.cpp"
+	#"${ANALYSIS}/LSVMPredictor.cpp"
 	"${ANALYSIS}/Helpers.cpp"
-	"${ANALYSIS}/Analyser.cpp"
+	#"${ANALYSIS}/Analyser.cpp"
+	"${ANALYSIS}/ModelInterpreter.cpp"
 	"${ANALYSIS}/Types.cpp"
 	"${ANALYSIS}/Functions.cpp"
 	"${ANALYSIS}/CondFolds.cpp"
+	"${ANALYSIS}/SameSizeFolds.cpp"
 	)
 
 target_link_libraries ( predictor

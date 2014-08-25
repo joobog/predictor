@@ -1,6 +1,10 @@
 #include <string>
 #include <memory>
 #include <stdio.h>
+#include <unordered_map>
+#include <utility>
+#include <cmath>
+#include <string>
 
 #include <muParser.h>
 
@@ -8,11 +12,23 @@
 #include "boost/filesystem.hpp"
 
 #include "analysis/DTreePredictor.hpp"
-#include "analysis/ANNPredictor.hpp"
-#include "analysis/SVMPredictor.hpp"
-#include "analysis/Analyser.hpp"
+#include "analysis/RFPredictor.hpp"
+//#include "analysis/ANNPredictor.hpp"
+//#include "analysis/SVMPredictor.hpp"
+//#include "analysis/LSVMPredictor.hpp"
+//#include "analysis/Analyser.hpp"
 #include "analysis/Functions.hpp"
+#include "analysis/ClassMap.hpp"
+#include "analysis/ModelInterpreter.hpp"
 
+#include <shark/Algorithms/Trainers/McSvmOVATrainer.h>
+#include <shark/Algorithms/Trainers/McSvmADMTrainer.h>
+#include <shark/Algorithms/Trainers/McSvmWWTrainer.h>
+#include <shark/Algorithms/Trainers/McSvmATSTrainer.h> 
+#include <shark/Algorithms/Trainers/McSvmMMRTrainer.h>
+#include <shark/Algorithms/Trainers/McSvmCSTrainer.h>
+#include <shark/Algorithms/Trainers/McSvmATMTrainer.h>
+#include <shark/Algorithms/Trainers/McSvmLLWTrainer.h>
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  main
@@ -35,11 +51,96 @@ enum class PredictionType {
 	IP,  // Interpolation
 };
 
-std::string filenameGenerator(
+/**
+ * @brief 
+ *
+ * @param data
+ *
+ * @return 
+ */
+//std::pair<std::unordered_map<size_t, size_t>, std::unordered_map<size_t, size_t>> 
+//createMaps (shark::ClassificationDataset& data) 
+//{
+//	using namespace std;
+//	using namespace shark;
+//	using namespace shark::blas;
+//	std::unordered_map<size_t, size_t> map;
+//	std::unordered_map<size_t, size_t> inverseMap;
+//
+//	size_t max = 0;
+//	auto elements = data.elements();
+//	for (auto iter = elements.begin(); iter != elements.end(); ++iter) {
+//		if (iter->label > max) max = iter->label;
+//	}
+//
+//	for (size_t i = 0; i <= max; i++) {
+//		map[i] = static_cast<size_t>(sqrt(i));
+//	}
+//	for (size_t i = 0; i <= static_cast<size_t>(sqrt(max)); i++) {
+//		inverseMap[i] = i*i;
+//	}
+//
+//
+//	for ( auto& elem : map ) {
+//		cout <<  elem.first << " && " << elem.second << endl;
+//	}
+//
+//	return std::make_pair(map, inverseMap);
+//}
+
+
+
+/**
+ * @brief 
+ *
+ * @param data
+ *
+ * @return 
+ */
+//shark::ClassificationDataset classify(shark::LabeledData<shark::RealVector, shark::RealVector>& data) {
+//	using namespace std;
+//	using namespace shark;
+//
+//	size_t max = 0;
+//	auto elements = data.elements();
+//	for (auto iter = elements.begin(); iter != elements.end(); ++iter) {
+//		if (iter->label[0] > max) max = iter->label[0];
+//	}
+//
+//	std::vector<shark::RealVector> inputs;
+//	std::vector<unsigned int> labels;
+//	for (auto iter = elements.begin(); iter != elements.end(); ++iter) {
+//		shark::RealVector input = iter->input;
+//		unsigned int label = static_cast<unsigned int>(sqrt(iter->label[0]));
+//		inputs.push_back(input);
+//		labels.push_back(label);
+//	}
+//
+//	ClassificationDataset result = createLabeledDataFromRange(inputs, labels);
+//	return result;
+//}
+
+//void declassify(mlta::VerbosePrediction& prediction) {
+//
+//}
+
+
+/**
+ * @brief 
+ *
+ * @param inputFilename
+ * @param predictorList
+ * @param functions
+ * @param 
+ *
+ * @return 
+ */
+std::string outDirGenerator(
 		const std::string& inputFilename, 
 		const std::vector<std::shared_ptr<mlta::Predictor>>& predictorList,
 		const std::vector<std::string>& functions,
-		PredictionType pType
+		const PredictionType pType,
+		unsigned int foldNumber = 0
 		) 
 {
 	namespace bfs = boost::filesystem;
@@ -75,7 +176,10 @@ std::string filenameGenerator(
 		filename += "-functions";
 	}
 
-	filename += "-output.csv";
+	if (foldNumber != 0 ) {
+		filename += "-fold-" + std::to_string(foldNumber);
+	}
+
 	return filename;
 }
 
@@ -98,7 +202,7 @@ int main ( int argc, char *argv[] )
 
 	std::vector<std::shared_ptr<Predictor>> predictorList;
 	string inputFilename;
-	string outputFilename;
+	string outputDir;
 	string statFilename;
 	bool separateFiles;
 	std::vector<std::string> rawFunctions;
@@ -121,9 +225,9 @@ int main ( int argc, char *argv[] )
 			("svm-trainer"       , bpo::value<std::vector<std::string>>()->multitoken() , "ova adm ww ats mmr cs atm llw")
 			("svm-offset"        , bpo::value<bool>()->default_value(false)             , "svm trainer offset")
 			("svm-unconstrained" , bpo::value<bool>()->default_value(false)             , "svm trainer unconstrained")
-			("svm-regulation"    , bpo::value<double>()->default_value(1000.0)          , "svm trainer regulation parameter")
+			("svm-regulation"    , bpo::value<double>()->default_value(20)          , "svm trainer regulation parameter")
 			("svm-gamma"         , bpo::value<double>()->default_value(0.5)             , "svm kernel gamma parameter")
-			("csv-output-file"   , bpo::value<string>()                                 , "csv output file")
+			("output-dir"   , bpo::value<string>()                                 , "output directory")
 			("csv-input-file"    , bpo::value<string>()                                 , "csv input file")
 			("prediction-type"   , bpo::value<string>()->default_value("cv")            , "CrossValidation (cv),, InverseCrossValidation(icv) , SameData(sd) , Interpolation(ip)")
 			("number-of-folds" , bpo::value<size_t>()->default_value(5), "number of folds")
@@ -149,64 +253,114 @@ int main ( int argc, char *argv[] )
 				nFolds=vm["number-of-folds"].as<size_t>();
 			}
 
+
 			/*
 			 * List of learning algorithms
 			 */	
 			if (vm.count("alg")) {
 				const std::vector<std::string> algoritmList = vm["alg"].as<std::vector<std::string>>();
-				double gamma{vm["svm-gamma"].as<double>()};										// kernel bandwidth parameter
-				kernel = std::make_shared<shark::GaussianRbfKernel<>>(gamma);
+//				double gamma{vm["svm-gamma"].as<double>()};										// kernel bandwidth parameter
+//				kernel = std::make_shared<shark::LinearKernel<>>();
 
 				for (auto& algorithm : algoritmList) {
 					if (algorithm == "dtree") { 
 						predictorList.push_back(make_shared<DTreePredictor>());
 					}
-					else if (algorithm == "ann") {
-						predictorList.push_back(make_shared<ANNPredictor>());
+					else if (algorithm == "rf") { 
+						predictorList.push_back(make_shared<RFPredictor>());
 					}
-					else if (algorithm == "svm") {
-						double c{vm["svm-regulation"].as<double>()};									// regulation parameter
-						bool offset{vm["svm-offset"].as<bool>()};											// use bias/offset parameter
-						bool unconstrained{vm["svm-unconstrained"].as<bool>()};
-
-						std::shared_ptr<AbstractSvmTrainer<RealVector, unsigned int>> trainer;
-
-						std::vector<std::string> svmTrainerList{vm["svm-trainer"].as<vector<string>>()}; 
-						for (auto& svmTrainer : svmTrainerList) {
-							if (svmTrainer == "ova") {
-								trainer =	std::make_shared<McSvmOVATrainer<RealVector>>(kernel.get(), c, offset, unconstrained);
-								predictorList.push_back(make_shared<SVMPredictor>(trainer));
-							}
-							else if (svmTrainer == "adm") {
-								trainer =	std::make_shared<McSvmADMTrainer<RealVector>>(kernel.get(), c, unconstrained);
-								predictorList.push_back(make_shared<SVMPredictor>(trainer));
-							}
-							else if (svmTrainer == "ww") {
-								trainer =	std::make_shared<McSvmWWTrainer<RealVector>>(kernel.get(), c, offset, unconstrained);
-								predictorList.push_back(make_shared<SVMPredictor>(trainer));
-							}
-							else if (svmTrainer == "ats") {
-								trainer =	std::make_shared<McSvmATSTrainer<RealVector>>(kernel.get(), c, unconstrained);
-								predictorList.push_back(make_shared<SVMPredictor>(trainer));
-							}
-							else if (svmTrainer == "mmr") {
-								trainer =	std::make_shared<McSvmMMRTrainer<RealVector>>(kernel.get(), c, offset, unconstrained);
-								predictorList.push_back(make_shared<SVMPredictor>(trainer));
-							}
-							else if (svmTrainer == "cs") {
-								trainer = std::make_shared<McSvmCSTrainer<RealVector>>(kernel.get(), c, offset, unconstrained);
-								predictorList.push_back(make_shared<SVMPredictor>(trainer));
-							}
-							else if (svmTrainer == "atm") {
-								trainer = std::make_shared<McSvmATMTrainer<RealVector>>(kernel.get(), c, unconstrained);
-								predictorList.push_back(make_shared<SVMPredictor>(trainer));
-							}
-							else if (svmTrainer == "llw") {
-								trainer = std::make_shared<McSvmLLWTrainer<RealVector>>(kernel.get(), c, unconstrained);
-								predictorList.push_back(make_shared<SVMPredictor>(trainer));
-							}
-						}
-					}
+//					else if (algorithm == "ann") {
+//						predictorList.push_back(make_shared<ANNPredictor>());
+//					}
+//					else if (algorithm == "svm") {
+//						double c{vm["svm-regulation"].as<double>()};									// regulation parameter
+//						bool offset{vm["svm-offset"].as<bool>()};											// use bias/offset parameter
+//						bool unconstrained{vm["svm-unconstrained"].as<bool>()};
+//
+//						std::shared_ptr<AbstractSvmTrainer<RealVector, unsigned int>> trainer;
+//
+//						std::vector<std::string> svmTrainerList{vm["svm-trainer"].as<vector<string>>()}; 
+//						for (auto& svmTrainer : svmTrainerList) {
+//							if (svmTrainer == "ova") {
+//								trainer =	std::make_shared<McSvmOVATrainer<RealVector>>(kernel.get(), c, offset, unconstrained);
+//								predictorList.push_back(make_shared<SVMPredictor>(trainer));
+//							}
+//							else if (svmTrainer == "adm") {
+//								trainer =	std::make_shared<McSvmADMTrainer<RealVector>>(kernel.get(), c, unconstrained);
+//								predictorList.push_back(make_shared<SVMPredictor>(trainer));
+//							}
+//							else if (svmTrainer == "ww") {
+//								trainer =	std::make_shared<McSvmWWTrainer<RealVector>>(kernel.get(), c, offset, unconstrained);
+//								predictorList.push_back(make_shared<SVMPredictor>(trainer));
+//							}
+//							else if (svmTrainer == "ats") {
+//								trainer =	std::make_shared<McSvmATSTrainer<RealVector>>(kernel.get(), c, unconstrained);
+//								predictorList.push_back(make_shared<SVMPredictor>(trainer));
+//							}
+//							else if (svmTrainer == "mmr") {
+//								trainer =	std::make_shared<McSvmMMRTrainer<RealVector>>(kernel.get(), c, offset, unconstrained);
+//								predictorList.push_back(make_shared<SVMPredictor>(trainer));
+//							}
+//							else if (svmTrainer == "cs") {
+//								trainer = std::make_shared<McSvmCSTrainer<RealVector>>(kernel.get(), c, offset, unconstrained);
+//								predictorList.push_back(make_shared<SVMPredictor>(trainer));
+//							}
+//							else if (svmTrainer == "atm") {
+//								trainer = std::make_shared<McSvmATMTrainer<RealVector>>(kernel.get(), c, unconstrained);
+//								predictorList.push_back(make_shared<SVMPredictor>(trainer));
+//							}
+//							else if (svmTrainer == "llw") {
+//								trainer = std::make_shared<McSvmLLWTrainer<RealVector>>(kernel.get(), c, unconstrained);
+//								predictorList.push_back(make_shared<SVMPredictor>(trainer));
+//							}
+//						}
+//					}
+//					else if (algorithm == "lsvm") {
+//						cout << "start lsvm" << endl;
+//						double c{vm["svm-regulation"].as<double>()};									// regulation parameter
+//						bool offset{vm["svm-offset"].as<bool>()};											// use bias/offset parameter
+//						bool unconstrained{vm["svm-unconstrained"].as<bool>()};
+//
+//						std::shared_ptr<AbstractLinearSvmTrainer<RealVector>> trainer;
+//
+//						std::vector<std::string> svmTrainerList{vm["svm-trainer"].as<vector<string>>()}; 
+//						for (auto& svmTrainer : svmTrainerList) {
+//							if (svmTrainer == "ova") {
+//								cout << "start lsvm ova" << endl;
+//								trainer =	std::make_shared<LinearMcSvmOVATrainer<RealVector>>(c, unconstrained);
+//								predictorList.push_back(make_shared<LSVMPredictor>(trainer));
+//							}
+////							else if (svmTrainer == "adm") {
+////								trainer =	std::make_shared<LinearSvmADMTrainer<RealVector>>(kernel.get(), c, unconstrained);
+////								predictorList.push_back(make_shared<SVMPredictor>(trainer));
+////							}
+//							else if (svmTrainer == "ww") {
+//								cout << "start lsvm ww" << endl;
+//								trainer =	std::make_shared<LinearMcSvmWWTrainer<RealVector>>(c, unconstrained);
+//								predictorList.push_back(make_shared<LSVMPredictor>(trainer));
+//							}
+////							else if (svmTrainer == "ats") {
+////								trainer =	std::make_shared<LinearSvmATSTrainer<RealVector>>(kernel.get(), c, unconstrained);
+////								predictorList.push_back(make_shared<SVMPredictor>(trainer));
+////							}
+////							else if (svmTrainer == "mmr") {
+////								trainer =	std::make_shared<LinearSvmMMRTrainer<RealVector>>(kernel.get(), c, offset, unconstrained);
+////								predictorList.push_back(make_shared<SVMPredictor>(trainer));
+////							}
+////							else if (svmTrainer == "cs") {
+////								trainer = std::make_shared<LinearSvmCSTrainer<RealVector>>(kernel.get(), c, offset, unconstrained);
+////								predictorList.push_back(make_shared<SVMPredictor>(trainer));
+////							}
+////							else if (svmTrainer == "atm") {
+////								trainer = std::make_shared<LinearSvmATMTrainer<RealVector>>(kernel.get(), c, unconstrained);
+////								predictorList.push_back(make_shared<SVMPredictor>(trainer));
+////							}
+////							else if (svmTrainer == "llw") {
+////								trainer = std::make_shared<LinearSvmLLWTrainer<RealVector>>(kernel.get(), c, unconstrained);
+////								predictorList.push_back(make_shared<SVMPredictor>(trainer));
+////							}
+//						}
+//					}
 					else {
 						cerr << "Unknown algorithm " << algorithm << " in the --algorithm option" << endl;
 						return ERROR_UNKNOWN_ARGUMENT;
@@ -322,8 +476,8 @@ int main ( int argc, char *argv[] )
 			/*
 			 * Filename generator
 			 */
-			if (vm.count("csv-output-file")) {
-				outputFilename = vm["csv-output-file"].as<string>();
+			if (vm.count("output-dir")) {
+				outputDir = vm["output-dir"].as<string>();
 			}
 
 //			if (vm.count("statistics")) {
@@ -348,12 +502,10 @@ int main ( int argc, char *argv[] )
 
 
 	// Make predictions and write them to files
-	std::vector<Prediction> predictionList;
-	shark::ClassificationDataset data;
+	shark::LabeledData<shark::RealVector, RealVector> orig_data;
 
 	try {
-		importCSV(data, inputFilename, shark::LAST_COLUMN, ',', '#', ClassificationDataset::DefaultBatchSize, 1);
-		
+		importCSV(orig_data, inputFilename, shark::LAST_COLUMN, 1, ',', '#', shark::LabeledData<shark::RealVector, shark::RealVector>::DefaultBatchSize, 1);
 	}
 	catch (shark::Exception e) {
 		std::cout << "Unable to open file " << inputFilename <<  ". Check paths!" << std::endl;
@@ -365,72 +517,120 @@ int main ( int argc, char *argv[] )
 		exit(EXIT_FAILURE);
 	}
 
-	for ( size_t i = 0; i < functions.size(); ++i ) {
-		if (functions[i] != nullptr) {
-			transformInput(data, i, functions[i]);
+//	pair<unordered_map<size_t, size_t>, unordered_map<size_t, size_t>> maps = createMaps(data);
+
+
+//	for ( size_t i = 0; i < functions.size(); ++i ) {
+//		if (functions[i] != nullptr) {
+//			transformInput(data, i, functions[i]);
+//		}
+//	}
+
+	std::vector<std::pair<VerboseTrainingset, VerbosePrediction>> predictionList;
+
+
+//	std::vector<pair<double, double>> buckets;
+//	buckets.push_back(make_pair(0., 25.));
+//	buckets.push_back(make_pair(25., 75.));
+//	buckets.push_back(make_pair(75., 110.));
+//	ClassMap classMap(buckets);
+
+//	switch (predictionType) {
+//		case PredictionType::CV:
+	for (auto& predictor : predictorList) {
+		if (outputDir.empty()) {
+			outputDir = outDirGenerator(inputFilename, predictorList, rawFunctions, PredictionType::CV, 0);
+		}
+		ClassMap classMap(150, 0.1, 0.1);
+		predictor->data(orig_data, classMap);
+		predictor->modelExportPath(outputDir);
+
+		std::vector<std::tuple<VerboseTrainingset, VerbosePrediction>> predictionList;
+		switch (predictionType) {
+			case PredictionType::CV:
+				predictionList = predictor->predictionCV(nFolds);
+				break;
+			case PredictionType::ICV:
+				predictionList = predictor->predictionInverseCV(nFolds);
+				break;
+			case PredictionType::SD:
+				predictionList = predictor->predictionOnSameData();
+				break;
+			default:
+				cout << "Unknown prediction type" << endl;
+				break;
+		}
+		for (int i = 0; i < predictionList.size(); ++i) {
+			std::string outputSubDir = outputDir + "/fold-" + to_string(i);
+			exportCSV(predictionList[i], outputSubDir, ',');
+			exportCSV(classMap, outputSubDir, ',');
+			std::cout << "Output is written to " << outputSubDir << endl;
 		}
 	}
+//			break;
+//
+//		case PredictionType::ICV:
+//			for (auto& predictor : predictorList) {
+//				predictor->data(orig_data, classMap);
+//				std::vector<std::tuple<shark::CARTClassifier<shark::RealVector>, VerboseTrainingset, VerbosePrediction>> predictionList = predictor->predictionInverseCV(nFolds);
+//				if (outputDir.empty()) {
+//					outputDir = outDirGenerator(inputFilename, predictorList, rawFunctions, PredictionType::CV, 0);
+//				}
+//				for (int i = 0; i < predictionList.size(); ++i) {
+//					std::string outputSubDir = outputDir + "/fold-" + to_string(i);
+//					exportCSV(predictionList[i], outputSubDir, ',');
+//					exportCSV(classMap, outputSubDir, ',');
+//					std::cout << "Output is written to " << outputSubDir << endl;
+//				}
+//			}
+//			break;
+//
+//		case PredictionType::SD:
+//
+//			for (auto& predictor : predictorList) {
+//				predictor->data(orig_data, classMap);
+//				std::vector<std::tuple<shark::CARTClassifier<shark::RealVector>, VerboseTrainingset, VerbosePrediction>> predictionList = predictor->predictionOnSameData();
+//				if (outputDir.empty()) {
+//					outputDir = outDirGenerator(inputFilename, predictorList, rawFunctions, PredictionType::CV, 0);
+//				}
+//				for (int i = 0; i < predictionList.size(); ++i) {
+//					std::string outputSubDir = outputDir;
+//					exportCSV(predictionList[i], outputSubDir, ',');
+//					exportCSV(classMap, outputSubDir, ',');
+//					std::cout << "Output is written to " << outputSubDir << endl;
+//				}
+//			}
+//			for (auto& predictor : predictorList) {
+//				predictor->data(&data);
+//				Prediction prediction = predictor->predictionOnSameData();
+//				declassify(prediction);
+//				predictionList.push_back(prediction);
+//			}
+//			if (outputFilename.empty()) {
+//				outputFilename = filenameGenerator(inputFilename, predictorList, rawFunctions, PredictionType::SD);
+//			}
+//			exportCSV(predictionList, outputFilename, ',');
+//			std::cout << "Output is written to " << outputFilename << endl;
+//			break;
+//
+//		case PredictionType::IP:
+//			cout << "Start prediction of new Data" << endl;
+//			for (auto& predictor : predictorList) {
+//				predictor->data(&data);
+//				Prediction prediction = predictor->predictionOfNewInput(predicates);
+//				declassify(prediction);
+//				predictionList.push_back(prediction);
+//			}
+//			if (outputFilename.empty()) {
+//				outputFilename = filenameGenerator(inputFilename, predictorList, rawFunctions, PredictionType::IP);
+//			}
+//			exportCSV(predictionList, outputFilename, ',');
+//			std::cout << "Output is written to " << outputFilename << endl;
+//			break;
 
-	switch (predictionType) {
-		case PredictionType::CV:
-			for (auto& predictor : predictorList) {
-				predictor->data(&data);
-				Prediction prediction = predictor->predictionCV(nFolds);
-				predictionList.push_back(prediction);
-			}
-			if (outputFilename.empty()) {
-				outputFilename = filenameGenerator(inputFilename, predictorList, rawFunctions, PredictionType::CV);
-			}
-			exportCSV(predictionList, outputFilename, ',');
-			std::cout << "Output is written to " << outputFilename << endl;
-			break;
-
-		case PredictionType::ICV:
-			for (auto& predictor : predictorList) {
-				predictor->data(&data);
-				std::vector<Prediction> predictions = predictor->predictionInverseCV(nFolds);
-				if (outputFilename.empty()) {
-				outputFilename = filenameGenerator(inputFilename, predictorList, rawFunctions, PredictionType::ICV);
-				}
-				for (size_t i = 0; i < predictions.size(); ++i) {
-					std::vector<Prediction> predictionList{};
-					predictionList.push_back(predictions[i]);
-					exportCSV(predictionList, appendFoldNum(outputFilename, i), ',');
-					std::cout << "Output is written to " << outputFilename << endl;
-				}
-			}
-			break;
-
-		case PredictionType::SD:
-			for (auto& predictor : predictorList) {
-				predictor->data(&data);
-				Prediction prediction = predictor->predictionOnSameData();
-				predictionList.push_back(prediction);
-			}
-			if (outputFilename.empty()) {
-				outputFilename = filenameGenerator(inputFilename, predictorList, rawFunctions, PredictionType::SD);
-			}
-			exportCSV(predictionList, outputFilename, ',');
-			std::cout << "Output is written to " << outputFilename << endl;
-			break;
-
-		case PredictionType::IP:
-			cout << "Start prediction of new Data" << endl;
-			for (auto& predictor : predictorList) {
-				predictor->data(&data);
-				Prediction prediction = predictor->predictionOfNewInput(predicates);
-				predictionList.push_back(prediction);
-			}
-			if (outputFilename.empty()) {
-				outputFilename = filenameGenerator(inputFilename, predictorList, rawFunctions, PredictionType::IP);
-			}
-			exportCSV(predictionList, outputFilename, ',');
-			std::cout << "Output is written to " << outputFilename << endl;
-			break;
-
-		default:
-			break;	
-	}
+//		default:
+//			break;	
+//	}
 	
 
 	return 0;

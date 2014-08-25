@@ -1,7 +1,5 @@
 /*
- * =====================================================================================
- *
- *       Filename:  DTreePredictor.cpp
+RFPredictor.cpp
  *
  *    Description:  
  *
@@ -16,7 +14,7 @@
  * =====================================================================================
  */
 
-#include "DTreePredictor.hpp"
+#include "RFPredictor.hpp"
 #include "Helpers.hpp"
 
 #include <iostream>
@@ -25,7 +23,7 @@
 #include <shark/Data/CVDatasetTools.h>
 #include <shark/Data/DataView.h>
 
-#include <shark/Algorithms/Trainers/CARTTrainer.h>
+#include <shark/Algorithms/Trainers/RFTrainer.h>
 #include <shark/ObjectiveFunctions/Loss/ZeroOneLoss.h>
 #include <shark/Algorithms/DirectSearch/ElitistCMA.h>
 #include <shark/ObjectiveFunctions/ErrorFunction.h>
@@ -50,13 +48,13 @@ namespace mlta {
 	 *
 	 * @return 
 	 */
-	shark::ArgMaxConverter<shark::CARTClassifier<shark::RealVector>> 
-	DTreePredictor::createDTreeModel(shark::ClassificationDataset& data, const unsigned int fold) {
+	shark::ArgMaxConverter<shark::RFClassifier> 
+	RFPredictor::createRFModel(shark::ClassificationDataset& data, const unsigned int fold) {
 		using namespace shark;
 		using namespace std;
 
-		CARTTrainer trainer;
-		CARTClassifier<RealVector> model;
+		RFTrainer trainer;
+		RFClassifier model;
 		trainer.train(model, data);
 	
 		// Nasty workaround	
@@ -64,7 +62,7 @@ namespace mlta {
 			std::string outputSubDir = m_modelExportPath + "/fold-" + to_string(fold);
 			ModelInterpreter::exportModel(outputSubDir, &model);
 		}
-		shark::ArgMaxConverter<CARTClassifier<RealVector>> converter;
+		shark::ArgMaxConverter<RFClassifier> converter;
 		converter.decisionFunction() = model;
 	
 		return std::move(converter);		
@@ -78,7 +76,7 @@ namespace mlta {
 	 * @return 
 	 */
 	std::tuple<VerboseTrainingset, VerbosePrediction>
-	DTreePredictor::run(const shark::RegressionDataset& originTraining, const shark::RegressionDataset& originValidation, const unsigned int fold) {
+	RFPredictor::run(const shark::RegressionDataset& originTraining, const shark::RegressionDataset& originValidation, const unsigned int fold) {
 		using namespace std;
 		using namespace shark;
 
@@ -90,7 +88,7 @@ namespace mlta {
 
 		VerboseTrainingset vtrainingset = makeVerboseTrainingset(originTraining, *m_classMap);
 
-		auto modelProxy = createDTreeModel(training, fold);
+		auto modelProxy = createRFModel(training, fold);
 
 		VerbosePrediction vprediction;
 		auto elements = originValidation.elements();
@@ -110,7 +108,7 @@ namespace mlta {
 	 * @return 
 	 */
 	std::vector<std::tuple<VerboseTrainingset, VerbosePrediction>>
-	DTreePredictor::predictionCV(const size_t nFolds) {
+	RFPredictor::predictionCV(const size_t nFolds) {
 		using namespace shark;
 		SameSizeFolds folds{*m_data, nFolds};
 		std::vector<std::tuple<VerboseTrainingset, VerbosePrediction>> data;
@@ -128,7 +126,7 @@ namespace mlta {
 	 * @return 
 	 */
 	std::vector<std::tuple<VerboseTrainingset, VerbosePrediction>>
-	DTreePredictor::predictionInverseCV(const size_t nFolds) {
+	RFPredictor::predictionInverseCV(const size_t nFolds) {
 		using namespace shark;
 		SameSizeFolds folds{*m_data, nFolds};
 		std::vector<std::tuple<VerboseTrainingset, VerbosePrediction>> data;
@@ -146,7 +144,7 @@ namespace mlta {
 	 * @return 
 	 */
 	std::vector<std::tuple<VerboseTrainingset, VerbosePrediction>>
-	DTreePredictor::predictionOnSameData() {
+	RFPredictor::predictionOnSameData() {
 		using namespace shark;
 		std::vector<std::tuple<VerboseTrainingset, VerbosePrediction>> data;
 		data.push_back(run(*m_data, *m_data, 1));
@@ -163,7 +161,7 @@ namespace mlta {
 	 * @return 
 	 */
 	std::vector<std::pair<VerboseTrainingset, VerbosePrediction>> 
-	DTreePredictor::predictionOfNewInput(std::vector<std::function<bool(double)>> predicates) {
+	RFPredictor::predictionOfNewInput(std::vector<std::function<bool(double)>> predicates) {
 		using namespace shark;
 		using namespace std;
 
@@ -173,7 +171,7 @@ namespace mlta {
 //
 		std::vector<std::pair<VerboseTrainingset, VerbosePrediction>> data;
 
-//		auto model = createDTreeModel(training);	
+//		auto model = createRFModel(training);	
 //
 //		auto elements = validation.elements();
 //		for (auto iter = elements.begin(); iter != elements.end(); ++iter) {

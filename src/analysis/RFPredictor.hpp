@@ -1,12 +1,12 @@
 /*
  * =====================================================================================
  *
- *       Filename:  Analyser.hpp
+ *       Filename:  RFAnalyser.hpp
  *
- *    Description:  j
+ *    Description:  
  *
  *        Version:  1.0
- *        Created:  07/10/2014 10:35:34 PM
+ *        Created:  07/09/2014 10:07:45 PM
  *       Revision:  none
  *       Compiler:  gcc
  *
@@ -16,50 +16,54 @@
  * =====================================================================================
  */
 
-#ifndef  Analyser_INC
-#define  Analyser_INC
 
-#include "Types.hpp"
+
+#ifndef  RFAnalyser_INC
+#define  RFAnalyser_INC
+
+#include <tuple>
+#include <shark/Models/Trees/RFClassifier.h>
+#include <shark/Models/Converter.h>
+#include "analysis/Predictor.hpp"
 
 namespace mlta {
 
 	/*
 	 * =====================================================================================
-	 *        Class:  Analyser
+	 *        Class:  RFAnalyser
 	 *  Description:  
 	 * =====================================================================================
 	 */
-	class Analyser
+	class RFPredictor : public Predictor
 	{
 		public:
 			/* ====================  LIFECYCLE     ======================================= */
-			Analyser(const VerbosePrediction& pred) :
-				m_pred(pred) {}
-
+				RFPredictor() {
+					m_name = "RF";
+				}
 			/* ====================  ACCESSORS     ======================================= */
 
 			/* ====================  MUTATORS      ======================================= */
 
 			/* ====================  OPERATORS     ======================================= */
-			int maxError();
-			unsigned int maxValue();
-			double relError();
-			double absError();
-			double rootMeanSquareDeviation();
+
+				std::vector<std::tuple<VerboseTrainingset, VerbosePrediction>> predictionCV(const size_t nFolds);
+				std::vector<std::tuple<VerboseTrainingset, VerbosePrediction>> predictionInverseCV(const size_t nFolds);
+				std::vector<std::tuple<VerboseTrainingset, VerbosePrediction>> predictionOnSameData();
+				std::vector<std::pair<VerboseTrainingset, VerbosePrediction>> predictionOfNewInput(std::vector<std::function<bool(double)>> predicates) override;
 
 		protected:
 			/* ====================  METHODS       ======================================= */
-
+				std::tuple<VerboseTrainingset, VerbosePrediction> run(const shark::RegressionDataset& originTraining, const shark::RegressionDataset& originValidation, const unsigned int fold);
+				shark::ArgMaxConverter<shark::RFClassifier> createRFModel(shark::ClassificationDataset& data, const unsigned int fold);
 			/* ====================  DATA MEMBERS  ======================================= */
 
 		private:
 			/* ====================  METHODS       ======================================= */
 
 			/* ====================  DATA MEMBERS  ======================================= */
-			VerbosePrediction m_pred;
 
-	}; /* -----  end of class Analyser  ----- */
-
+	}; /* -----  end of class RFAnalyser  ----- */
 
 }		/* -----  end of namespace mlta  ----- */
-#endif   /* ----- #ifndef Analyser_INC  ----- */
+#endif   /* ----- #ifndef RFAnalyser_INC  ----- */

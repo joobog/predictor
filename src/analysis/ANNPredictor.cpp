@@ -64,7 +64,10 @@ namespace mlta {
 		IRpropPlus optimizer;
 		optimizer.init(errorFunction);
 
-		TrainingError<> stoppingCriterion(10, 1.e-5);
+//		TrainingError<> stoppingCriterion(10, 1.e-5);
+
+		// Lower precision for faster learning 
+		TrainingError<> stoppingCriterion(10, 1.e-3);
 		OptimizationTrainer<FFNet<LogisticNeuron, LinearNeuron>, unsigned int> trainer(&loss, &optimizer, &stoppingCriterion);
 		trainer.train(model, data);
 
@@ -81,14 +84,14 @@ namespace mlta {
 	 *
 	 * @return 
 	 */
-	Prediction 
+	std::pair<TrainingSet, Prediction> 
 	ANNPredictor::predictionCV(const size_t nFolds) {
 		using namespace std;
 		using namespace shark;
 
 		CVFolds<ClassificationDataset> folds = createCVSameSizeBalanced(*m_data, nFolds);
 
-		Prediction data;
+		std::pair<TrainingSet, Prediction> data;
 		for (size_t fold = 0; fold < folds.size(); ++fold) {
 
 			ClassificationDataset training = folds.training(fold);
@@ -110,20 +113,20 @@ namespace mlta {
 	 *
 	 * @return 
 	 */
-	std::vector<Prediction> 
+	std::vector<std::pair<TrainingSet, Prediction>> 
 	ANNPredictor::predictionInverseCV(const size_t nFolds) {
 		using namespace std;
 		using namespace shark;
 
 		CVFolds<ClassificationDataset> folds = createCVSameSizeBalanced(*m_data, nFolds);
-		std::vector<Prediction> dataVector;
+		std::vector<std::pair<TrainingSet, Prediction>> dataVector;
 
 		for (size_t fold = 0; fold < folds.size(); ++fold) {
 			ClassificationDataset training = folds.validation(fold);
 			ClassificationDataset  validation = folds.training(fold);
 			auto model = createFFNetModel(training);
 
-			Prediction data;
+			std::pair<TrainingSet, Prediction> data;
 			auto elements  = validation.elements();
 			for (auto iter = elements.begin(); iter != elements.end(); iter++) {
 				append(data, iter->input, iter->label, model(iter->input));
@@ -140,14 +143,14 @@ namespace mlta {
 	 *
 	 * @return 
 	 */
-	Prediction 
+	std::pair<TrainingSet, Prediction> 
 	ANNPredictor::predictionOnSameData() {
 		using namespace std;
 		using namespace shark;
 
 		auto model = createFFNetModel(*m_data);
 
-		Prediction data;
+		std::pair<TrainingSet, Prediction> data;
 		auto elements  = m_data->elements();
 		for (auto iter = elements.begin(); iter != elements.end(); iter++) {
 			append(data, iter->input, iter->label, model(iter->input));
@@ -164,12 +167,12 @@ namespace mlta {
 	 *
 	 * @return 
 	 */
-	Prediction 
+	std::pair<TrainingSet, Prediction> 
 	ANNPredictor::predictionOfNewInput(std::vector<std::function<bool(double)>> predicates) {
 		using namespace std;
 		using namespace shark;
 
-		Prediction data;
+		std::pair<TrainingSet, Prediction> data;
 		CondFolds condFolds(*m_data, predicates);
 		ClassificationDataset training = condFolds.training();
 		ClassificationDataset validation = condFolds.validation();

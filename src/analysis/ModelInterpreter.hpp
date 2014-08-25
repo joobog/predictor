@@ -1,12 +1,12 @@
 /*
  * =====================================================================================
  *
- *       Filename:  Analyser.hpp
+ *       Filename:  ModelInterpreter.hpp
  *
- *    Description:  j
+ *    Description:  
  *
  *        Version:  1.0
- *        Created:  07/10/2014 10:35:34 PM
+ *        Created:  08/23/2014 05:16:26 PM
  *       Revision:  none
  *       Compiler:  gcc
  *
@@ -16,36 +16,43 @@
  * =====================================================================================
  */
 
-#ifndef  Analyser_INC
-#define  Analyser_INC
 
-#include "Types.hpp"
+#ifndef  ModelInterpreter_INC
+#define  ModelInterpreter_INC
+
+#include <iostream>
+#include <string>
+#include <shark/Models/AbstractModel.h>
+#include <shark/Models/Trees/CARTClassifier.h>
+#include <shark/Models/Trees/RFClassifier.h>
 
 namespace mlta {
 
 	/*
 	 * =====================================================================================
-	 *        Class:  Analyser
+	 *        Class:  ModelInterpreter
 	 *  Description:  
 	 * =====================================================================================
 	 */
-	class Analyser
+	class ModelInterpreter
 	{
 		public:
 			/* ====================  LIFECYCLE     ======================================= */
-			Analyser(const VerbosePrediction& pred) :
-				m_pred(pred) {}
+			ModelInterpreter ();                             /* constructor      */
+			ModelInterpreter ( const ModelInterpreter &other );   /* copy constructor */
+			~ModelInterpreter ();                            /* destructor       */
 
 			/* ====================  ACCESSORS     ======================================= */
 
 			/* ====================  MUTATORS      ======================================= */
 
 			/* ====================  OPERATORS     ======================================= */
-			int maxError();
-			unsigned int maxValue();
-			double relError();
-			double absError();
-			double rootMeanSquareDeviation();
+
+			static void exportModel(const std::string dir, const shark::CARTClassifier<shark::RealVector>* model);
+			static void exportModel(const std::string dir, const shark::RFClassifier* model);
+
+
+			ModelInterpreter& operator = ( const ModelInterpreter &other ); /* assignment operator */
 
 		protected:
 			/* ====================  METHODS       ======================================= */
@@ -56,10 +63,9 @@ namespace mlta {
 			/* ====================  METHODS       ======================================= */
 
 			/* ====================  DATA MEMBERS  ======================================= */
-			VerbosePrediction m_pred;
 
-	}; /* -----  end of class Analyser  ----- */
+	}; /* -----  end of class ModelInterpreter  ----- */
 
 
 }		/* -----  end of namespace mlta  ----- */
-#endif   /* ----- #ifndef Analyser_INC  ----- */
+#endif   /* ----- #ifndef ModelInterpreter_INC  ----- */

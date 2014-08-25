@@ -62,3 +62,13 @@ Die Anzahl von Bin sollte man aus technischen Gruenden konstant halten. Die Algo
 Eine sehr interessante Information ist, wie verlaeuft die Fehlerkurve. Es soll ein Graph erstellt werden der absolute Fehler in Anbhaengikeit von Anzahl von Inputs.
 
 
+8. Die Vorhersagen wurden mithilfe der Machine Learning Library "shark" gemacht. 
+
+Shark bietet eine sehr große Auswahl an Lernalgorithmen und es ist schwierig zu sagen welcher Algorithmus für die Aufgabe am besten geeignet ist. Deswegen, zum Vorhersagen wurden drei verschiedene Algorithmen benutzt, Support Vector Maschinen, Entscheidungsbäume und Künstliche Neuronale Netze.
+
+Daniel Schmidke hat in seiner Bachelorarbeit bestimmte Parameter ausgewaehlt und dazu die Performance gemessen. Fuer diese Arbeit haben wir seine Messungen in verschiedene Datensaetze umgewandelt und haben versucht mit Machine Learning Algorithmen Informationen zu extrahieren.
+
+1. Datengröße Lücke Datasieving Buffer Durchschnittsperformance
+1. Füllstand Lücke Datasieving Buffer Durchschnittsperformance
+1. Datengröße Lücke Datasieving Buffer Performance
+1. Füllstand Lücke Datasieving Buffer Performance

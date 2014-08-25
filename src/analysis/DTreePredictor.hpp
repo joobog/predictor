@@ -21,6 +21,9 @@
 #ifndef  DTreeAnalyser_INC
 #define  DTreeAnalyser_INC
 
+#include <tuple>
+#include <shark/Models/Trees/CARTClassifier.h>
+#include <shark/Models/Converter.h>
 #include "analysis/Predictor.hpp"
 
 namespace mlta {
@@ -44,14 +47,15 @@ namespace mlta {
 
 			/* ====================  OPERATORS     ======================================= */
 
-			Prediction predictionCV(const size_t nFolds) override;
-			std::vector<Prediction> predictionInverseCV(const size_t nFolds) override;
-			Prediction predictionOnSameData() override;
-			Prediction predictionOfNewInput(std::vector<std::function<bool(double)>> predicates) override;
+				std::vector<std::tuple<VerboseTrainingset, VerbosePrediction>> predictionCV(const size_t nFolds);
+				std::vector<std::tuple<VerboseTrainingset, VerbosePrediction>> predictionInverseCV(const size_t nFolds);
+				std::vector<std::tuple<VerboseTrainingset, VerbosePrediction>> predictionOnSameData();
+				std::vector<std::pair<VerboseTrainingset, VerbosePrediction>> predictionOfNewInput(std::vector<std::function<bool(double)>> predicates) override;
 
 		protected:
 			/* ====================  METHODS       ======================================= */
-
+				std::tuple<VerboseTrainingset, VerbosePrediction> run(const shark::RegressionDataset& originTraining, const shark::RegressionDataset& originValidation, const unsigned int fold);
+				shark::ArgMaxConverter<shark::CARTClassifier<shark::RealVector>> createDTreeModel(shark::ClassificationDataset& data, const unsigned int fold);
 			/* ====================  DATA MEMBERS  ======================================= */
 
 		private:

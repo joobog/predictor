@@ -22,16 +22,25 @@
 #define  Functions_INC
 
 #include <memory>
+#include <utility>
+#include <tuple>
+
 #include <shark/Data/Dataset.h>
 #include <shark/Data/Csv.h>
+#include <shark/Models/Trees/CARTClassifier.h>
 #include <muParser.h>
+#include "analysis/ClassMap.hpp"
 
 #include "Types.hpp"
 
 namespace mlta {
 	void transformInput(shark::ClassificationDataset& data, const size_t n, std::shared_ptr<mu::Parser> func);
-	void exportCSV(const std::vector<Prediction>& pred, std::string fn, char separator = ',', char comment = '#');
-	void print(const Prediction& data, char separator = ':');
+	void exportCSV(const std::tuple<VerboseTrainingset, VerbosePrediction>& pred, std::string fn, char separator = ',', char comment = '#');
+	void print(const VerbosePrediction& data, char separator = ':');
+	shark::ClassificationDataset transformToClassificationDataset(
+			const shark::LabeledData<shark::RealVector, shark::RealVector>& data, 
+			ClassMap& classMap);
+
 	/// \brief Import a labeled Dataset from a csv file
 	/////
 	///// \param  data       Container storing the loaded data
@@ -47,6 +56,17 @@ namespace mlta {
 			char separator = ',',
 			char comment = '#',
 			std::size_t maximumBatchSize = shark::LabeledData<shark::RealVector, unsigned int>::DefaultBatchSize,
+			std::size_t titleLines = 0
+			);
+
+	void importCSV(
+			shark::LabeledData<shark::RealVector, shark::RealVector>& data,
+			std::string fn,
+			shark::LabelPosition lp,
+			std::size_t numberOfOutputs,
+			char separator = ',',
+			char comment = '#',
+			std::size_t maximumBatchSize = shark::LabeledData<shark::RealVector, shark::RealVector>::DefaultBatchSize,
 			std::size_t titleLines = 0
 			);
 }		/* -----  end of namespace mlta  ----- */

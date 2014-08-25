@@ -1,12 +1,12 @@
 /*
  * =====================================================================================
  *
- *       Filename:  Analyser.hpp
+ *       Filename:  SameSizeFolds.hpp
  *
- *    Description:  j
+ *    Description:  
  *
  *        Version:  1.0
- *        Created:  07/10/2014 10:35:34 PM
+ *        Created:  08/05/2014 12:24:40 PM
  *       Revision:  none
  *       Compiler:  gcc
  *
@@ -16,36 +16,39 @@
  * =====================================================================================
  */
 
-#ifndef  Analyser_INC
-#define  Analyser_INC
 
-#include "Types.hpp"
+#ifndef  SameSizeFolds_INC
+#define  SameSizeFolds_INC
+
+#include <shark/Data/Dataset.h>
+
+#include <functional>
+#include <vector>
 
 namespace mlta {
 
 	/*
 	 * =====================================================================================
-	 *        Class:  Analyser
+	 *        Class:  SameSizeFolds
 	 *  Description:  
 	 * =====================================================================================
 	 */
-	class Analyser
+	class SameSizeFolds
 	{
 		public:
 			/* ====================  LIFECYCLE     ======================================= */
-			Analyser(const VerbosePrediction& pred) :
-				m_pred(pred) {}
+			SameSizeFolds (shark::LabeledData<shark::RealVector, shark::RealVector> const& data, const size_t nFolds);
 
 			/* ====================  ACCESSORS     ======================================= */
 
 			/* ====================  MUTATORS      ======================================= */
 
 			/* ====================  OPERATORS     ======================================= */
-			int maxError();
-			unsigned int maxValue();
-			double relError();
-			double absError();
-			double rootMeanSquareDeviation();
+
+			shark::LabeledData<shark::RealVector, shark::RealVector> training(const size_t fold);
+			shark::LabeledData<shark::RealVector, shark::RealVector> validation(const size_t fold);
+			size_t size() {return m_foldIndices.size();}
+
 
 		protected:
 			/* ====================  METHODS       ======================================= */
@@ -56,10 +59,9 @@ namespace mlta {
 			/* ====================  METHODS       ======================================= */
 
 			/* ====================  DATA MEMBERS  ======================================= */
-			VerbosePrediction m_pred;
-
-	}; /* -----  end of class Analyser  ----- */
-
-
+			shark::LabeledData<shark::RealVector, shark::RealVector> m_data;
+			std::vector<std::vector<size_t>> m_foldIndices;
+	}; /* -----  end of class SameSizeFolds  ----- */
 }		/* -----  end of namespace mlta  ----- */
-#endif   /* ----- #ifndef Analyser_INC  ----- */
+#endif   /* ----- #ifndef SameSizeFolds_INC  ----- */
+

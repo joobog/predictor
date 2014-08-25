@@ -26,6 +26,8 @@
 
 #include <vector>
 
+#include "analysis/ClassMap.hpp"
+
 namespace mlta {
 	struct Statistics {
 		int maxError;
@@ -35,20 +37,41 @@ namespace mlta {
 		double absTError;
 	};
 
-	struct Prediction {
-		std::vector<std::vector<double>> inputs;
-		std::vector<std::string> inputLabels;
-		std::vector<std::vector<unsigned int>> outputs;
-		std::vector<std::string> outputLabels;
-		std::vector<std::vector<unsigned int>> preds;
-		std::vector<std::string> predLabels;
+	struct VerboseTrainingset {
+		// input vector
+		std::vector<std::vector<double>> inputValues;
+		std::vector<std::string> inputValueLabels;
+
+		// real output
+		std::vector<std::vector<double>> outputValues;
+		std::vector<std::string> outputValueLabels;
+		std::vector<std::vector<unsigned int>> outputClasses;
+		std::vector<std::string> outputClassLabels;
+		std::vector<std::vector<Bucket>> outputBuckets;
+		std::vector<std::string> outputBucketLabels;
+	};
+
+	struct VerbosePrediction : public VerboseTrainingset{
+		// prediction
+		std::vector<std::vector<double>> predValues;
+		std::vector<std::string> predValueLabels;
+		std::vector<std::vector<unsigned int>> predClasses;
+		std::vector<std::string> predClassLabels;
+		std::vector<std::vector<Bucket>> predBuckets;
+		std::vector<std::string> predBucketLabels;
 	};	
 
 	void append(
-			Prediction& data, 
-			const shark::blas::vector<double> input,
-			const unsigned int label,
-			const unsigned int prediction);
+			VerbosePrediction& data, 
+			const shark::blas::vector<double>& input,
+			const shark::blas::vector<double>& label,
+			const unsigned int prediction,
+			const ClassMap& classMap);
+
+	VerboseTrainingset makeVerboseTrainingset(
+			const shark::LabeledData<shark::RealVector, shark::RealVector>& dataset,
+			const ClassMap& classMap);
+
 
 //	template< typename T >
 //	struct DataGroup {

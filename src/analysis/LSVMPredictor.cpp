@@ -16,7 +16,7 @@
  * =====================================================================================
  */
 
-#include "SVMPredictor.hpp"
+#include "LSVMPredictor.hpp"
 #include <memory>
 
 
@@ -30,10 +30,12 @@ namespace mlta {
 	 *
 	 * @return 
 	 */
-	shark::KernelClassifier<shark::RealVector>
-	SVMPredictor::createKernelClassifierModel(shark::ClassificationDataset& data) {
+	shark::LinearClassifier<shark::RealVector>
+	LSVMPredictor::createLinearClassifierModel(shark::ClassificationDataset& data) {
 			using namespace shark;
-			KernelClassifier<RealVector> model;
+//			LinearClassifier<RealVector> model;
+			LinearClassifier<RealVector> model;
+			std::cout << "start " << m_trainer->name() << std::endl;
 			m_trainer->train(model, data);
 			return model;
 		}
@@ -46,18 +48,22 @@ namespace mlta {
 	 * @return 
 	 */
 	std::pair<TrainingSet, Prediction> 
-	SVMPredictor::predictionCV(const size_t nFolds) {
+	LSVMPredictor::predictionCV(const size_t nFolds) {
 		using namespace std;
 		using namespace shark;
+		cout << "create folds" << endl;
 		
 		CVFolds<ClassificationDataset> folds = createCVSameSizeBalanced(*m_data, nFolds);
 		std::pair<TrainingSet, Prediction> data;
 
+		cout << "start main loop" << endl;
+
 		for (size_t fold = 0; fold < folds.size(); ++fold) {
 			ClassificationDataset training = folds.training(fold);
 			ClassificationDataset validation = folds.validation(fold);
+			cout << "learn from training fold " << fold << endl;
 
-			auto model = createKernelClassifierModel(training);
+			auto model = createLinearClassifierModel(training);
 
 			auto elements = validation.elements();
 			for (auto iter = elements.begin(); iter != elements.end(); ++iter) {
@@ -75,12 +81,11 @@ namespace mlta {
 	 * @return 
 	 */
 	std::vector<std::pair<TrainingSet, Prediction>> 
-	SVMPredictor::predictionInverseCV(const size_t nFolds) {
+	LSVMPredictor::predictionInverseCV(const size_t nFolds) {
 		using namespace std;
 		using namespace shark;
 	
 		std::vector<std::pair<TrainingSet, Prediction>> dataVector;	
-		const AbstractKernelFunction<RealVector>* kernel = m_trainer->kernel();
 		CVFolds<ClassificationDataset> folds = createCVSameSizeBalanced(*m_data, nFolds);
 		std::pair<TrainingSet, Prediction> data;
 
@@ -88,7 +93,7 @@ namespace mlta {
 			std::pair<TrainingSet, Prediction> data;
 			ClassificationDataset training = folds.validation(fold);
 			ClassificationDataset validation = folds.training(fold);
-			KernelClassifier<RealVector> model;
+			LinearClassifier<RealVector> model;
 
 			m_trainer->train(model, training);
 
@@ -109,15 +114,14 @@ namespace mlta {
 	 * @return 
 	 */
 	std::pair<TrainingSet, Prediction> 
-	SVMPredictor::predictionOnSameData() {
+	LSVMPredictor::predictionOnSameData() {
 		using namespace std;
 		using namespace shark;
 	
 		std::pair<TrainingSet, Prediction> data;
 		std::vector<std::pair<TrainingSet, Prediction>> dataVector;	
-		const AbstractKernelFunction<RealVector>* kernel = m_trainer->kernel();
 
-		KernelClassifier<RealVector> model;
+		LinearClassifier<RealVector> model;
 		m_trainer->train(model, *m_data);
 
 		auto elements = m_data->elements();
@@ -137,7 +141,7 @@ namespace mlta {
 	 * @return 
 	 */
 	std::pair<TrainingSet, Prediction> 
-	SVMPredictor::predictionOfNewInput(std::vector<std::function<bool(double)>> predicates) {
+	LSVMPredictor::predictionOfNewInput(std::vector<std::function<bool(double)>> predicates) {
 		using namespace std;
 		using namespace shark;
 	
@@ -147,9 +151,8 @@ namespace mlta {
 		ClassificationDataset validation = condFolds.validation();
 
 		std::vector<std::pair<TrainingSet, Prediction>> dataVector;	
-		const AbstractKernelFunction<RealVector>* kernel = m_trainer->kernel();
 
-		KernelClassifier<RealVector> model;
+		LinearClassifier<RealVector> model;
 
 		m_trainer->train(model, training);
 

@@ -43,10 +43,10 @@ namespace mlta {
 
 			/* ====================  OPERATORS     ======================================= */
 			
-			Prediction predictionCV(const size_t nFolds) override;
-			std::vector<Prediction> predictionInverseCV(const size_t nFolds) override;
-			Prediction predictionOnSameData() override;
-			Prediction predictionOfNewInput(std::vector<std::function<bool(double)>> predicates) override;
+			std::pair<TrainingSet, Prediction> predictionCV(const size_t nFolds) override;
+			std::vector<std::pair<TrainingSet, Prediction>> predictionInverseCV(const size_t nFolds) override;
+			std::pair<TrainingSet, Prediction> predictionOnSameData() override;
+			std::pair<TrainingSet, Prediction> predictionOfNewInput(std::vector<std::function<bool(double)>> predicates) override;
 
 		protected:
 			/* ====================  METHODS       ======================================= */

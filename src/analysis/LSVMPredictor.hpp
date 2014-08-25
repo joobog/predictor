@@ -1,7 +1,7 @@
 /*
  * =====================================================================================
  *
- *       Filename:  SVMPredictor.hpp
+ *       Filename:  LLSVMPredictor.hpp
  *
  *    Description:  
  *
@@ -18,8 +18,8 @@
 
 
 
-#ifndef  SVMPredictor_INC
-#define  SVMPredictor_INC
+#ifndef  LLSVMPredictor_INC
+#define  LLSVMPredictor_INC
 
 #include <iostream>
 
@@ -28,8 +28,6 @@
 
 #include <shark/Data/CVDatasetTools.h>
 #include <shark/Models/Kernels/GaussianRbfKernel.h>
-#include <shark/Models/Kernels/LinearKernel.h>
-#include <shark/Models/Kernels/PolynomialKernel.h>
 #include <shark/ObjectiveFunctions/Loss/ZeroOneLoss.h>
 #include <shark/Algorithms/Trainers/McSvmOVATrainer.h>
 #include <shark/Algorithms/Trainers/McSvmADMTrainer.h>
@@ -44,15 +42,15 @@ namespace mlta {
 	
 	/*
 	 * =====================================================================================
-	 *        Class:  SVMPredictor
+	 *        Class:  LSVMPredictor
 	 *  Description:  
 	 * =====================================================================================
 	 */
-	class SVMPredictor : public Predictor
+	class LSVMPredictor : public Predictor
 	{
 		public:
 			/* ====================  LIFECYCLE     ======================================= */
-			SVMPredictor(std::shared_ptr<shark::AbstractSvmTrainer<shark::RealVector, unsigned int>>& trainer) :
+			LSVMPredictor(std::shared_ptr<shark::AbstractLinearSvmTrainer<shark::RealVector>>& trainer) :
 				m_trainer{trainer}
 			{
 				m_name = m_trainer->name();
@@ -70,7 +68,7 @@ namespace mlta {
 			std::pair<TrainingSet, Prediction> predictionOfNewInput(std::vector<std::function<bool(double)>> predicates) override;
 		protected:
 			/* ====================  METHODS       ======================================= */
-			shark::KernelClassifier<shark::RealVector> createKernelClassifierModel(shark::ClassificationDataset& data);
+			shark::LinearClassifier<shark::RealVector> createLinearClassifierModel(shark::ClassificationDataset& data);
 
 			/* ====================  DATA MEMBERS  ======================================= */
 
@@ -78,9 +76,9 @@ namespace mlta {
 			/* ====================  METHODS       ======================================= */
 
 			/* ====================  DATA MEMBERS  ======================================= */
-			std::shared_ptr<shark::AbstractSvmTrainer<shark::RealVector, unsigned int>> m_trainer;
+			std::shared_ptr<shark::AbstractLinearSvmTrainer<shark::RealVector>> m_trainer;
 
-	}; /* -----  end of class SVMPredictor  ----- */
+	}; /* -----  end of class LSVMPredictor  ----- */
 
 }		/* -----  end of namespace mlta  ----- */
-#endif   /* ----- #ifndef SVMPredictor_INC  ----- */
+#endif   /* ----- #ifndef LSVMPredictor_INC  ----- */
